@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FAF9F7">
+<meta name="color-scheme" content="light dark">
+<script>(function(){try{var p=localStorage.getItem('theme')||'auto',r=document.documentElement;r.dataset.themePref=p;if(p!=='auto')r.dataset.theme=p;var d=p==='dark'||(p==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.querySelector('meta[name=theme-color]').content=d?'#161518':'#FAF9F7';}catch(e){}})();</script>
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="manifest" href="./manifest.json">
 <title>App Gestión Personal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,6 +27,30 @@
     --primary:var(--lav-ink); --primary-soft:var(--lav);
     --safe-b: env(safe-area-inset-bottom, 0px);
     --safe-t: env(safe-area-inset-top, 0px);
+    --toast-b:24px; --glass:rgba(250,249,247,.88); --danger-bg:#F6C6C6; --danger-ink:#B03A3A;
+    color-scheme:light;
+  }
+  :root[data-theme="dark"]{
+    --bg:#161518; --card:#212025; --ink:#ECEAE6; --ink-soft:#9D99A4; --line:#322F38;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --lav:#3A3459; --lav-ink:#B9ABF2; --mint:#21403A; --mint-ink:#7FD1A8;
+    --peach:#4A3B27; --peach-ink:#EAB46F; --rose:#4B2C37; --rose-ink:#F294B4;
+    --sky:#233A4B; --sky-ink:#82BDE4; --butter:#403C20; --butter-ink:#DCCB5E;
+    --primary:#A190EA; --primary-soft:var(--lav);
+    --glass:rgba(22,21,24,.88); --danger-bg:#5A2A2F; --danger-ink:#FF9C9C;
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+    --bg:#161518; --card:#212025; --ink:#ECEAE6; --ink-soft:#9D99A4; --line:#322F38;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --lav:#3A3459; --lav-ink:#B9ABF2; --mint:#21403A; --mint-ink:#7FD1A8;
+    --peach:#4A3B27; --peach-ink:#EAB46F; --rose:#4B2C37; --rose-ink:#F294B4;
+    --sky:#233A4B; --sky-ink:#82BDE4; --butter:#403C20; --butter-ink:#DCCB5E;
+    --primary:#A190EA; --primary-soft:var(--lav);
+    --glass:rgba(22,21,24,.88); --danger-bg:#5A2A2F; --danger-ink:#FF9C9C;
+    color-scheme:dark;
+    }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;overscroll-behavior-y:none;}
@@ -74,6 +101,9 @@
     transition:background .15s,color .15s;padding:0;
   }
   .notif-toggle:hover{color:var(--primary);}
+  #themeBtn{margin-right:8px;}
+  #themeBtn svg{width:18px;height:18px;display:none;}
+  html[data-theme-pref="auto"] #themeBtn .th-auto,html:not([data-theme-pref]) #themeBtn .th-auto,html[data-theme-pref="light"] #themeBtn .th-light,html[data-theme-pref="dark"] #themeBtn .th-dark{display:block;}
   .notif-toggle.subscribed{color:var(--primary);background:var(--primary-soft);border-color:var(--primary);}
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
@@ -81,7 +111,7 @@
   .app-header{
     display:flex;align-items:center;gap:12px;
     padding:14px 24px;border-bottom:1px solid var(--line);
-    background:rgba(250,249,247,0.85);backdrop-filter:blur(10px);
+    background:var(--glass);backdrop-filter:blur(10px);
     position:sticky;top:0;z-index:40;
   }
   .app-header .menu-btn{display:none;}
@@ -177,7 +207,7 @@
   .due.soon{background:var(--rose);color:var(--rose-ink);}
   .due.today{background:var(--peach);color:var(--peach-ink);}
   .due.later{background:var(--sky);color:var(--sky-ink);}
-  .due.overdue{background:#F6C6C6;color:#B03A3A;}
+  .due.overdue{background:var(--danger-bg);color:var(--danger-ink);}
   .task-del{background:none;border:none;color:var(--line);cursor:pointer;padding:5px;flex-shrink:0;border-radius:6px;}
   .task-del:hover{color:var(--rose-ink);background:var(--rose);}
   .task-del svg{width:15px;height:15px;display:block;}
@@ -605,6 +635,7 @@
   .mobilenav{display:none;}
 
   @media (max-width:860px){
+    :root{--toast-b:80px;}
     #shell{flex-direction:column;}
     .side{display:none;}
     .content{padding-bottom:calc(64px + var(--safe-b));}
@@ -618,7 +649,7 @@
 
     .mobilenav{
       display:flex;position:fixed;bottom:0;left:0;right:0;
-      background:rgba(250,249,247,0.92);backdrop-filter:blur(14px);
+      background:var(--glass);backdrop-filter:blur(14px);
       border-top:1px solid var(--line);
       padding:8px 6px calc(8px + var(--safe-b));
       z-index:50;
@@ -869,14 +900,27 @@
 <body>
 <div id="app"></div>
 
+<script src="./mobile.js"></script>
 <script>
 const API_BASE = './api.php';
 const AUTH_BASE = './auth.php';
 const PALETTE = ['#DAD3F0','#CDEBDD','#F7DFC4','#F6D2DC','#CFE4F2','#F3ECC2'];
 const PALETTE_INK = ['#7D6BB0','#4F9A76','#C4813E','#C4577E','#4A83A8','#AC9B34'];
 
+const SNAP_KEYS = { '?resource=all': 'snap_all' };
+function snapGet(k){ try{ return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
+function snapSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+function snapClear(){ try{ ['snap_all','snap_me'].forEach(k => localStorage.removeItem(k)); } catch(e){} }
 async function api(path, options = {}) {
-  const res = await fetch(API_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const snapKey = !options.method && SNAP_KEYS[path];
+  let res;
+  try { res = await fetch(API_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...options }); }
+  catch(netErr){                                         // sin red: para la carga inicial se usa la última copia guardada
+    const snap = snapKey && snapGet(snapKey);
+    if (snap) { window.offlineMode = true; return snap; }
+    throw netErr;
+  }
+  window.offlineMode = false;
   if (res.status === 401) { me = null; render(); throw new Error('no autenticado'); }
   if (!res.ok) {
     const e = await res.json().catch(()=>({error:'Error'}));
@@ -884,12 +928,21 @@ async function api(path, options = {}) {
     err.status = res.status; err.data = e;
     throw err;
   }
-  return res.status === 204 ? null : res.json();
+  const out = res.status === 204 ? null : await res.json();
+  if (snapKey && out) snapSet(snapKey, out);
+  return out;
 }
 async function authApi(path, options = {}) {
-  const res = await fetch(AUTH_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  let res;
+  try { res = await fetch(AUTH_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...options }); }
+  catch(netErr){
+    const snap = path === '?action=me' && snapGet('snap_me');
+    if (snap) { window.offlineMode = true; return snap; }
+    throw netErr;
+  }
   const data = await res.json().catch(()=>({}));
   if (!res.ok) throw new Error(data.error || 'Error');
+  if (path === '?action=me' && data) snapSet('snap_me', data);
   return data;
 }
 
@@ -1044,6 +1097,7 @@ function render(){
   if (currentSection === 'perfil') renderPerfil();
   if (currentSection === 'tiempo') renderWeatherSection();
   if (currentSection === 'diagramas') renderDiagramas();
+  if (window.MobileX) MobileX.onRender();
 }
 
 /* ============================================================ AUTH SCREEN ============================================================ */
@@ -1086,6 +1140,7 @@ async function submitAuth(){
 }
 
 async function logout(){
+  snapClear();
   await authApi('?action=logout', { method:'POST' });
   me = null; document.getElementById('shell')?.remove();
   render();
@@ -1127,6 +1182,7 @@ function buildShell(app){
           <h1 id="headerTitle">Tareas</h1>
           <div class="spacer"></div>
           <button class="header-weather" id="headerWeather"></button>
+          <button class="notif-toggle" id="themeBtn" data-theme-toggle title="Tema: automático / claro / oscuro" aria-label="Cambiar tema">${themeIcons()}</button>
           <button class="notif-toggle" id="notifBtn"></button>
         </div>
 
@@ -1178,6 +1234,7 @@ function buildShell(app){
         <div class="drawer-nav-list">${items.map(i => `<button class="drawer-item drawer-nav-item" data-nav="${i.id}"><span class="di-icon">${i.ic}</span>${i.label}</button>`).join('')}</div>
         <div class="drawer-divider"></div>
         <div class="drawer-section-label">Cuenta</div>
+        <button class="drawer-item" id="installBtnDrawer" style="display:none;">Instalar app</button>
         <button class="drawer-item danger" id="logoutBtnDrawer">${logoutIcon()} Cerrar sesión</button>
       </div>
       <div class="modal-backdrop top" id="shareModalBackdrop"></div>
@@ -1280,6 +1337,11 @@ function buildShell(app){
   initPush();
 }
 
+function themeIcons(){
+  return '<svg class="th-auto" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>'
+    + '<svg class="th-light" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+    + '<svg class="th-dark" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+}
 function openDrawer(){
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawerBackdrop').classList.add('open');
@@ -2103,18 +2165,25 @@ async function togglePush(){
     renderNotifBtn();
   }
 }
-function showToast(msg){
+function showToast(msg, action){
   let t = document.getElementById('toast');
   if(!t){
     t = document.createElement('div');
     t.id = 'toast';
-    t.style.cssText = 'position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:13.5px;max-width:88vw;text-align:center;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.2);';
+    t.style.cssText = 'position:fixed;left:50%;bottom:calc(var(--toast-b,24px) + var(--safe-b));transform:translateX(-50%);width:max-content;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:13.5px;max-width:88vw;text-align:center;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:14px;';
     document.body.appendChild(t);
   }
   t.textContent = msg;
-  t.style.opacity = '1';
+  if(action){
+    const b = document.createElement('button');
+    b.textContent = action.label;
+    b.style.cssText = 'background:none;border:none;color:var(--lav-ink);font-weight:700;font-size:13.5px;cursor:pointer;padding:0;';
+    b.onclick = () => { t.style.opacity = '0'; t.style.pointerEvents = 'none'; action.fn(); };
+    t.appendChild(b);
+  }
+  t.style.opacity = '1'; t.style.pointerEvents = '';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.style.transition='opacity .3s'; t.style.opacity='0'; }, 4000);
+  t._timer = setTimeout(() => { t.style.transition='opacity .3s'; t.style.opacity='0'; t.style.pointerEvents = 'none'; }, action ? 5500 : 4000);
 }
 
 /* ============================================================ TAREAS ============================================================ */
@@ -2383,7 +2452,7 @@ function taskRow(task,cat,c,myTags,opts){
   if(meta.children.length) body.appendChild(meta);
   const del=document.createElement('button'); del.className='task-del'; del.innerHTML=trashSvg(); del.onclick=()=>deleteTask(task.id);
   row.appendChild(box); row.appendChild(body); row.appendChild(del);
-  return row;
+  return window.MobileX ? MobileX.swipeable(row, task) : row;
 }
 function renderTagForm(cat){
   const wrap=document.getElementById('tagFormWrap');
@@ -2410,6 +2479,7 @@ const REMINDER_OPTS=[{mins:1440,label:'1 día antes'},{mins:180,label:'3 horas a
 async function toggleTask(id,done){
   await api('?resource=tasks&id='+id,{method:'PATCH',body:JSON.stringify({done})});
   const t=tasks.find(t=>t.id==id); if(t) t.done=done; refreshTaskViews();
+  if(window.MobileX) MobileX.haptic(done ? 18 : 8);
 }
 async function deleteTask(id){ await api('?resource=tasks&id='+id,{method:'DELETE'}); tasks=tasks.filter(t=>t.id!=id); refreshTaskViews(); }
 function refreshTaskViews(){ renderTabs(); renderMain(); if(currentSection==='calendario') renderCalendario(); }
