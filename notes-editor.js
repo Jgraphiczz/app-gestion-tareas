@@ -236,9 +236,6 @@ export function mountRichEditor(host, opts) {
   function emitState() { updateTableBar(); const s = getState(); if (s) onState(s); }
 
   /* ---------- barra de tabla: columnas y filas ---------- */
-  const tbar = document.createElement('div');
-  tbar.className = 'table-bar';
-  tbar.style.display = 'none';
   const cellEl = () => closest('td,th');
   function cellAt(row, i) { return row.cells[Math.min(i, row.cells.length - 1)]; }
   function newCellLike(c) { const n = document.createElement(c.tagName.toLowerCase()); n.innerHTML = '<br>'; return n; }
@@ -277,20 +274,72 @@ export function mountRichEditor(host, opts) {
     },
     delTable(c) { removeTable(c.closest('table')); return null; },
   };
-  [['addCol', '+ Columna', 'btn-soft'], ['delCol', '− Columna', 'btn-outline'], ['addRow', '+ Fila', 'btn-soft'], ['delRow', '− Fila', 'btn-outline'], ['delTable', 'Borrar tabla', 'btn-danger']].forEach(([op, label, cls]) => {
+
+  /* Asas integradas: "+" en el borde derecho (columna) e inferior (fila) de la tabla, como en Notion.
+     Aparecen al pasar el ratón o al poner el cursor dentro de la tabla (en móvil, con el cursor). */
+  const stage = host.parentNode;
+  if (stage && getComputedStyle(stage).position === 'static') stage.style.position = 'relative';
+  const mkHandle = (cls, label) => {
+    const h = document.createElement('button');
+    h.type = 'button'; h.className = 'tbl-handle ' + cls; h.title = label; h.setAttribute('aria-label', label);
+    h.innerHTML = '<span>+</span>'; h.style.display = 'none';
+    h.onmousedown = e => e.preventDefault();                       // no perder el cursor de la celda
+    return h;
+  };
+  const colHandle = mkHandle('tbl-add-col', 'Añadir columna');
+  const rowHandle = mkHandle('tbl-add-row', 'Añadir fila');
+  const tools = document.createElement('div');                      // mini barra de iconos para quitar
+  tools.className = 'tbl-tools'; tools.style.display = 'none';
+  [['delCol', '− Col', 'Quitar columna'], ['delRow', '− Fila', 'Quitar fila'], ['delTable', '🗑', 'Borrar tabla']].forEach(([op, txt, label]) => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'btn btn-sm ' + cls; b.textContent = label;
-    b.onmousedown = e => e.preventDefault();                       // no perder el cursor de la celda
+    b.type = 'button'; b.textContent = txt; b.title = label; b.setAttribute('aria-label', label);
+    b.onmousedown = e => e.preventDefault();
     b.onclick = () => {
       const c = cellEl(); if (!c) return;
       const next = TABLE_OPS[op](c);
       if (next) setCaret(next, 0);
       changed(); emitState();
     };
-    tbar.appendChild(b);
+    tools.appendChild(b);
   });
-  if (host.parentNode) host.parentNode.insertBefore(tbar, host);
-  function updateTableBar() { tbar.style.display = cellEl() ? 'flex' : 'none'; }
+  if (stage) stage.append(colHandle, rowHandle, tools);
+
+  let hoverTable = null, hideTimer = 0;
+  const activeTable = () => { const c = cellEl(); return c ? c.closest('table') : (hoverTable && host.contains(hoverTable) ? hoverTable : null); };
+  function placeTableUi() {
+    const t = activeTable();
+    const show = !!(t && stage);
+    colHandle.style.display = rowHandle.style.display = show ? '' : 'none';
+    tools.style.display = show && cellEl() ? '' : 'none';
+    if (!show) return;
+    const sr = stage.getBoundingClientRect(), tr = t.getBoundingClientRect();
+    const x = tr.left - sr.left + stage.scrollLeft, y = tr.top - sr.top + stage.scrollTop;
+    Object.assign(colHandle.style, { left: x + tr.width + 4 + 'px', top: y + 'px', height: tr.height + 'px' });
+    Object.assign(rowHandle.style, { left: x + 'px', top: y + tr.height + 4 + 'px', width: tr.width + 'px' });
+    Object.assign(tools.style, { left: x + tr.width + 'px', top: y - 4 + 'px' });
+  }
+  function updateTableBar() { placeTableUi(); }
+  function appendTo(t, what) {
+    if (what === 'col') {
+      [...t.rows].forEach(r => { const last = r.cells[r.cells.length - 1]; if (last) r.appendChild(newCellLike(last)); });
+    } else {
+      const last = t.rows[t.rows.length - 1], nr = document.createElement('tr');
+      [...last.cells].forEach(x => nr.appendChild(newCellLike(x.tagName === 'TH' ? document.createElement('td') : x)));
+      (t.tBodies[0] || t.appendChild(document.createElement('tbody'))).appendChild(nr);
+    }
+    const lastRow = t.rows[t.rows.length - 1];
+    setCaret(what === 'col' ? lastRow.cells[lastRow.cells.length - 1] : lastRow.cells[0], 0);
+    changed(); emitState();
+  }
+  colHandle.onclick = () => { const t = activeTable(); if (t) appendTo(t, 'col'); };
+  rowHandle.onclick = () => { const t = activeTable(); if (t) appendTo(t, 'row'); };
+  host.addEventListener('mouseover', e => { clearTimeout(hideTimer); const t = e.target.closest && e.target.closest('table'); if (t && host.contains(t) && t !== hoverTable) { hoverTable = t; placeTableUi(); } });
+  host.addEventListener('mouseleave', () => { hideTimer = setTimeout(() => { hoverTable = null; placeTableUi(); }, 350); });
+  [colHandle, rowHandle, tools].forEach(h => { h.addEventListener('mouseenter', () => clearTimeout(hideTimer)); h.addEventListener('mouseleave', () => { hideTimer = setTimeout(() => { hoverTable = null; placeTableUi(); }, 350); }); });
+  host.addEventListener('input', placeTableUi);
+  document.addEventListener('selectionchange', () => { if (host.isConnected) placeTableUi(); });
+  window.addEventListener('resize', placeTableUi);
+  if (stage) stage.addEventListener('scroll', placeTableUi, { passive: true });
 
   /* ---------- comandos ---------- */
   function toggleBlock(tag) {
