@@ -9,12 +9,49 @@
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./index.html",
+  "scope": "./",
+  "lang": "es",
+  "orientation": "portrait",
+  "description": "Tareas, notas, gastos y calendario en un solo sitio.",
+  "shortcuts": [
+    {
+      "name": "Nueva tarea",
+      "short_name": "Tarea",
+      "url": "./index.html?action=nueva-tarea",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Nuevo gasto",
+      "short_name": "Gasto",
+      "url": "./index.html?action=nuevo-gasto",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
