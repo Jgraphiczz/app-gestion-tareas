@@ -8,8 +8,14 @@
   const pad = n => String(n).padStart(2, '0');
   const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
-  const KINDS = [['task', 'Tarea'], ['gasto', 'Gasto'], ['ingreso', 'Ingreso']];
-  const PLACEHOLDERS = ['Llamar al dentista mañana a las 9', 'Gasolina 12', 'Reunión el viernes a las 16:30', 'Nómina 1.450 €', 'Comprar pan hoy', 'Cena con amigos 45 € el sábado'];
+  const KINDS = [['task', 'Tarea'], ['gasto', 'Gasto'], ['ingreso', 'Ingreso'], ['compra', 'Compra']];
+  const can = id => typeof modState !== 'function' || modState(id) === 'allow';
+  const kindAllowed = k => k === 'task' ? (can('tareas') || can('calendario')) : k === 'compra' ? can('compra') : can('gastos');
+  const visKinds = () => KINDS.filter(k => kindAllowed(k[0]));
+  const REPEATS = [['No se repite', null], ['Cada día', 'daily'], ['Laborables', 'weekdays'], ['Cada semana', 'weekly'], ['Cada mes', 'monthly'], ['Cada año', 'yearly']];
+  const PRIOS = [['Normal', 0], ['Baja', 1], ['Media', 2], ['Alta', 3]];
+  const splitItems = t => String(t || '').split(/\s*(?:,|;|\n|\s+y\s+)\s*/).map(x => x.trim()).filter(Boolean).map(x => x.charAt(0).toUpperCase() + x.slice(1));
+  const PLACEHOLDERS = ['Llamar al dentista mañana a las 9', 'Gasolina 12', 'Añade leche y huevos a la compra', 'Regar las plantas cada lunes', 'Nómina 1.450 €', 'Reunión el viernes a las 16:30 urgente', 'Cena con amigos 45 € el sábado'];
   const REMINDERS = [['Sin aviso', null], ['A la hora', 0], ['15 min antes', 15], ['1 hora antes', 60], ['1 día antes', 1440]];
   const ic = {
     cal: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5.5" width="16" height="14.5" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3.5v4M15 3.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -20,6 +26,9 @@
     users: '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.2a3 3 0 0 1 0 5.6M17.5 14.2A5.2 5.2 0 0 1 20.5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     spark: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 5.4L19.5 10l-5.6 1.7L12 17l-1.9-5.3L4.5 10l5.6-1.6L12 3zM18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 21V4.5M6 5h11l-2 3.5 2 3.5H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    repeat: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 11V9a3 3 0 0 1 3-3h11M18 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H6M6 21l-3-3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    cart: '<svg viewBox="0 0 24 24" fill="none"><path d="M3.5 5h2.2l2 9.5h9.6l1.7-6.8H7M9.5 19.2a1.1 1.1 0 1 0 0 .01M16.5 19.2a1.1 1.1 0 1 0 0 .01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   };
@@ -42,9 +51,9 @@
     .cap-x svg,.cap-ai svg{width:19px;height:19px;display:block;}
     .cap-ai{width:auto;padding:0 14px;gap:7px;font-weight:600;font-size:13.5px;color:var(--primary);}
     .cap-ai.busy svg{animation:orbSpin 1s linear infinite;} .cap-ai:disabled{opacity:.5;}
-    .cap-seg{flex:1;display:flex;position:relative;background:color-mix(in srgb,var(--card) 80%,transparent);border:1px solid var(--line);border-radius:15px;padding:3px;max-width:340px;margin:0 auto;}
+    .cap-seg{flex:1;display:flex;position:relative;background:color-mix(in srgb,var(--card) 80%,transparent);border:1px solid var(--line);border-radius:15px;padding:3px;max-width:430px;margin:0 auto;}
     .cap-seg .thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:12px;background:var(--grad);box-shadow:var(--glow);transition:transform .3s cubic-bezier(.3,.9,.3,1);}
-    .cap-seg button{position:relative;flex:1;border:none;background:none;font:inherit;font-size:13.5px;font-weight:600;color:var(--ink-soft);padding:9px 4px;border-radius:12px;cursor:pointer;transition:color .2s;}
+    .cap-seg button{position:relative;flex:1;border:none;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:9px 2px;border-radius:12px;cursor:pointer;transition:color .2s;white-space:nowrap;}
     .cap-seg button.on{color:#fff;}
     .cap-body{flex:1;min-height:0;overflow-y:auto;padding:18px 22px 10px;display:flex;flex-direction:column;gap:16px;-webkit-overflow-scrolling:touch;}
     .cap-input{width:100%;border:none;background:transparent;resize:none;outline:none !important;box-shadow:none !important;color:var(--ink);caret-color:var(--primary);
@@ -70,6 +79,8 @@
     .cap-pill.field.amt input{max-width:130px;font-family:var(--font-mono);font-weight:600;} .cap-pill.field .suf{padding-right:12px;color:var(--ink-soft);font-weight:600;}
     .cap-card{display:flex;align-items:center;gap:14px;border-radius:20px;padding:15px 16px;background:color-mix(in srgb,var(--card) 88%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);position:relative;overflow:hidden;animation:capPop .35s cubic-bezier(.3,1.4,.4,1);}
     .cap-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--grad);}
+    .cap-card.compra .cap-cico{background:var(--mint);color:var(--mint-ink);} .cap-card.compra::before{background:linear-gradient(var(--mint-ink),color-mix(in srgb,var(--mint-ink) 55%,#fff));}
+    .cap-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;} .cap-items span{background:var(--bg);border-radius:9px;padding:4px 10px;font-size:13px;font-weight:550;color:var(--ink);}
     .cap-card.gasto::before{background:linear-gradient(var(--rose-ink),color-mix(in srgb,var(--rose-ink) 55%,#fff));} .cap-card.ingreso::before{background:linear-gradient(var(--mint-ink),color-mix(in srgb,var(--mint-ink) 55%,#fff));}
     .cap-cico{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--lav);color:var(--lav-ink);}
     .cap-card.gasto .cap-cico{background:var(--rose);color:var(--rose-ink);} .cap-card.ingreso .cap-cico{background:var(--mint);color:var(--mint-ink);} .cap-cico svg{width:21px;height:21px;display:block;}
@@ -109,7 +120,7 @@
   function fresh(preset) {
     const p = preset || {};
     st = { kind: p.kind || 'task', lockedKind: !!p.kind, text: p.text || '', title: '', amount: null, date: p.date ? String(p.date).slice(0, 10) : null, time: null, catId: null, remind: null,
-           scope: 'personal', touched: {}, row: null, multi: null, aiTitle: null, busy: false, hint: '' };
+           scope: 'personal', priority: 0, repeat: null, items: [], shopGroup: null, touched: {}, row: null, multi: null, aiTitle: null, busy: false, hint: '' };
     if (p.date) st.touched.date = true;
   }
 
@@ -122,7 +133,7 @@
         <div class="cap-done"><div class="ring">${ic.check}</div><p id="capDoneTxt"></p></div>
         <div class="cap-top">
           <button class="cap-x" id="capX" type="button" aria-label="Cerrar">${ic.x}</button>
-          <div class="cap-seg" id="capSeg"><i class="thumb"></i>${KINDS.map(k => `<button type="button" data-k="${k[0]}">${k[1]}</button>`).join('')}</div>
+          <div class="cap-seg" id="capSeg"></div>
           <button class="cap-ai" id="capAI" type="button" title="Entender con IA (varias cosas a la vez, frases complejas)">${ic.spark}<span>IA</span></button>
         </div>
         <div class="cap-body" id="capBody">
@@ -141,7 +152,6 @@
       </div>`;
     document.body.appendChild(el);
     $('capBg').onclick = $('capX').onclick = close;
-    $('capSeg').querySelectorAll('button').forEach(b => { b.onclick = () => setKind(b.dataset.k, true); });
     const input = $('capInput');
     input.addEventListener('input', () => { st.text = input.value; st.aiTitle = null; st.hint = ''; grow(); applyParse(); sync(); });
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); } });
@@ -152,10 +162,21 @@
     if (SR && $('capMic')) $('capMic').onclick = toggleMic;
     $('capLegacy').onclick = () => { const k = st.kind; close(); (k === 'task' ? legacy.task : legacy.mov)?.(); };
   }
+  function renderSeg() {
+    const ks = visKinds(), seg = $('capSeg');
+    seg.innerHTML = '<i class="thumb"></i>' + ks.map(k => `<button type="button" data-k="${k[0]}">${k[1]}</button>`).join('');
+    seg.querySelector('.thumb').style.width = `calc((100% - 6px)/${ks.length})`;
+    seg.querySelectorAll('button').forEach(b => { b.onclick = () => setKind(b.dataset.k, true); });
+  }
   function grow() { const i = $('capInput'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, window.innerHeight * 0.34) + 'px'; }
 
   function open(preset) {
     build(); fresh(preset);
+    const ks = visKinds();
+    if (!ks.length) { showToast(typeof modMessage === 'function' ? modMessage('tareas') : 'Tu rol no permite apuntar nada.'); return; }
+    if (!ks.some(k => k[0] === st.kind)) { st.kind = ks[0][0]; st.lockedKind = false; }
+    renderSeg();
+    if (window.Shopping && kindAllowed('compra')) Shopping.load().then(() => st && sync()).catch(() => {});
     $('cap').classList.remove('ok'); $('cap').classList.add('open'); document.documentElement.classList.add('cap-open');
     const input = $('capInput'); input.value = st.text; grow();
     cycleHints(); applyParse(); sync();
@@ -185,14 +206,17 @@
   }
   function applyParse() {
     const P = parseCapture(st.text, today());
-    if (!st.lockedKind && !st.touched.kind) st.kind = P.kind;
+    if (!st.lockedKind && !st.touched.kind && visKinds().some(k => k[0] === P.kind)) st.kind = P.kind;
     const T = st.kind === 'task' && P.amount != null ? parseCapture(st.text, today(), { noAmount: true }) : P;   // en una tarea el importe forma parte del texto
     if (!st.touched.date) st.date = T.date;
     if (!st.touched.time) st.time = T.time;
     if (!st.touched.remind) st.remind = T.remind;
     if (!st.touched.amount) st.amount = st.kind === 'task' ? null : P.amount;
-    st.auto = { date: !st.touched.date && !!T.date, time: !st.touched.time && !!T.time, amount: !st.touched.amount && P.amount != null && st.kind !== 'task', remind: !st.touched.remind && T.remind != null };
-    st.title = st.aiTitle != null ? st.aiTitle : (st.kind === 'task' ? T.title : P.title);
+    if (!st.touched.priority) st.priority = T.priority || 0;
+    if (!st.touched.repeat) { st.repeat = T.repeat || null; if (st.repeat && !st.date && !st.touched.date) st.date = ymd(today()); }
+    st.items = st.kind === 'compra' ? (P.kind === 'compra' ? P.items : splitItems(st.text)) : [];
+    st.auto = { priority: !st.touched.priority && T.priority > 0, repeat: !st.touched.repeat && !!T.repeat, date: !st.touched.date && !!T.date, time: !st.touched.time && !!T.time, amount: !st.touched.amount && P.amount != null && st.kind !== 'task', remind: !st.touched.remind && T.remind != null };
+    st.title = st.aiTitle != null ? st.aiTitle : (st.kind === 'task' ? T.title : st.kind === 'compra' ? st.items.join(', ') : P.title);
     if (!st.touched.cat) st.catId = autoCat(st.text) || null;
   }
   const catList = () => st.kind === 'task' ? categories : financeCategories;
@@ -204,12 +228,12 @@
     return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', '');
   };
   const money = n => (typeof window.money === 'function' ? window.money(n) : n.toFixed(2).replace('.', ',') + ' €');
-  const valid = () => st.multi ? st.multi.some(Boolean) : (st.kind === 'task' ? !!(st.title || '').trim() : (st.amount > 0));
+  const valid = () => st.multi ? st.multi.some(Boolean) : (st.kind === 'task' ? !!(st.title || '').trim() : st.kind === 'compra' ? st.items.length > 0 : (st.amount > 0));
 
   /* ---------- pintado ---------- */
   function sync() {
     if (!built) return;
-    const idx = KINDS.findIndex(k => k[0] === st.kind);
+    const idx = Math.max(0, visKinds().findIndex(k => k[0] === st.kind));
     $('capSeg').querySelector('.thumb').style.transform = `translateX(${idx * 100}%)`;
     $('capSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === st.kind));
     $('capHint').className = 'cap-hint' + (st.hint ? ' ai' : '');
@@ -219,7 +243,7 @@
     $('capMulti').style.display = st.multi ? '' : 'none';
     if (!st.multi) { paintChips(); paintRow(); paintCard(); } else paintMulti();
     const go = $('capGo'); go.disabled = !valid() || st.busy;
-    $('capGoTxt').textContent = st.multi ? `Añadir las ${st.multi.filter(Boolean).length}` : st.kind === 'task' ? 'Apuntar tarea' : st.kind === 'gasto' ? 'Apuntar gasto' : 'Apuntar ingreso';
+    $('capGoTxt').textContent = st.multi ? `Añadir las ${st.multi.filter(Boolean).length}` : st.kind === 'task' ? 'Apuntar tarea' : st.kind === 'gasto' ? 'Apuntar gasto' : st.kind === 'compra' ? 'Añadir a la compra' : 'Apuntar ingreso';
   }
   let lastAuto = {};
   function chip(key, icon, label, has, auto) {
@@ -234,6 +258,13 @@
       chips.push(chip('time', ic.clock, st.time || 'Hora', !!st.time, A.time));
       chips.push(chip('cat', ic.tag, cat ? cat.name : 'Categoría', !!cat, false));
       if (st.date) chips.push(chip('remind', ic.bell, (REMINDERS.find(r => r[1] === st.remind) || REMINDERS[0])[0], st.remind != null, A.remind));
+      chips.push(chip('prio', ic.flag, st.priority ? 'Prioridad ' + PRIOS[st.priority][0].toLowerCase() : 'Prioridad', st.priority > 0, A.priority));
+      chips.push(chip('repeat', ic.repeat, st.repeat ? REPEATS.find(r => r[1] === st.repeat)[0] : 'Repetir', !!st.repeat, A.repeat));
+    } else if (st.kind === 'compra') {
+      const gs = window.Shopping ? Shopping.scopeGroups : [];
+      const cur = gs.find(g => String(g.id) === String(st.shopGroup));
+      if (gs.length) chips.push(chip('shop', ic.users, cur ? cur.name : 'Personal', !!cur, false));
+      else chips.push('<span class="cap-hint" style="align-self:center;">Separa los productos con comas o «y».</span>');
     } else {
       chips.push(chip('amount', ic.euro, st.amount > 0 ? money(st.amount) : 'Importe', st.amount > 0, A.amount));
       chips.push(chip('date', ic.cal, dateLabel(st.date) || 'Hoy', true, A.date));
@@ -276,6 +307,13 @@
       f.querySelector('input').oninput = e => { const v = parseFloat(String(e.target.value).replace(',', '.')); st.amount = isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null; st.touched.amount = true; syncCard(); };
       f.querySelector('input').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); st.row = null; sync(); } };
       row.appendChild(f);
+    } else if (st.row === 'prio') {
+      PRIOS.forEach(([l, v]) => row.appendChild(pill(l, st.priority === v, () => { st.priority = v; st.touched.priority = true; st.row = null; sync(); })));
+    } else if (st.row === 'repeat') {
+      REPEATS.forEach(([l, v]) => row.appendChild(pill(l, st.repeat === v, () => { st.repeat = v; st.touched.repeat = true; if (v && !st.date) { st.date = ymd(today()); st.touched.date = true; } st.row = null; sync(); })));
+    } else if (st.row === 'shop') {
+      row.appendChild(pill('Personal', !st.shopGroup, () => { st.shopGroup = null; st.row = null; sync(); }));
+      (window.Shopping ? Shopping.scopeGroups : []).forEach(g => row.appendChild(pill(escapeHtml(g.name), String(st.shopGroup) === String(g.id), () => { st.shopGroup = g.id; st.row = null; sync(); })));
     } else if (st.row === 'scope') {
       row.appendChild(pill('Personal', st.scope === 'personal', () => { st.scope = 'personal'; st.row = null; sync(); }));
       row.appendChild(pill(escapeHtml(group.name), st.scope === 'grupo', () => { st.scope = 'grupo'; st.row = null; sync(); }));
@@ -284,8 +322,14 @@
   function syncCard() { paintChips(); paintCard(); $('capGo').disabled = !valid() || st.busy; }
   function paintCard() {
     const cat = effCat(), k = st.kind, due = st.date ? [dateLabel(st.date), st.time].filter(Boolean).join(' · ') : '';
-    const meta = k === 'task' ? [due || 'Sin fecha', cat ? cat.name : null].filter(Boolean).join(' · ') : [dateLabel(st.date) || 'Hoy', cat ? cat.name : 'Sin categoría', st.scope === 'grupo' ? group.name : null].filter(Boolean).join(' · ');
+    const meta = k === 'task' ? [due || 'Sin fecha', cat ? cat.name : null, st.repeat ? '↻ ' + REPEATS.find(r => r[1] === st.repeat)[0].toLowerCase() : null, st.priority ? 'prioridad ' + PRIOS[st.priority][0].toLowerCase() : null].filter(Boolean).join(' · ') : [dateLabel(st.date) || 'Hoy', cat ? cat.name : 'Sin categoría', st.scope === 'grupo' ? group.name : null].filter(Boolean).join(' · ');
     const title = (st.title || '').trim();
+    if (k === 'compra') {
+      const gs = window.Shopping ? Shopping.scopeGroups : [], cur = gs.find(g => String(g.id) === String(st.shopGroup));
+      $('capCard').innerHTML = `<div class="cap-card compra"><span class="cap-cico">${ic.cart}</span><div class="cap-ct"><b class="${st.items.length ? '' : 'empty'}">${st.items.length ? 'Añadir a la compra' : '¿Qué falta en casa?'}</b>
+        <span>${escapeHtml(cur ? 'Lista de ' + cur.name : 'Tu lista personal')}</span>${st.items.length ? `<div class="cap-items">${st.items.map(i => `<span>${escapeHtml(i)}</span>`).join('')}</div>` : ''}</div></div>`;
+      return;
+    }
     $('capCard').innerHTML = `<div class="cap-card ${k}"><span class="cap-cico">${k === 'task' ? ic.check : k === 'gasto' ? '−' : '+'}</span>
       <div class="cap-ct"><b class="${title ? '' : 'empty'}">${escapeHtml(title || (k === 'task' ? '¿Qué hay que hacer?' : 'Añade una descripción (opcional)'))}</b><span>${escapeHtml(meta)}</span></div>
       ${k !== 'task' ? `<span class="cap-amt">${st.amount > 0 ? (k === 'gasto' ? '−' : '+') + money(st.amount) : '—'}</span>` : ''}</div>`;
@@ -301,15 +345,20 @@
     if (a.type === 'task') {
       const category_id = a.category_id || await ensureTaskCategory();
       const due_at = a.date ? new Date(a.date + 'T' + (a.time || '09:00')).toISOString() : null;
-      const data = await api('?resource=tasks', { method: 'POST', body: JSON.stringify({ text: a.title, description: '', category_id, due_at, reminders: due_at && a.remind != null ? [a.remind] : [] }) });
+      const data = await api('?resource=tasks', { method: 'POST', body: JSON.stringify({ text: a.title, description: '', category_id, due_at, reminders: due_at && a.remind != null ? [a.remind] : [], priority: a.priority || 0, repeat_rule: due_at ? (a.repeat || null) : null }) });
       tasks.unshift({ reminders: [], notified: [], due_at: null, description: '', ...data, id: String(data.id) });
       if (currentSection === 'tareas') { activeCat = category_id; showUpcoming = false; showOverdue = false; }
       return 'Tarea apuntada' + (a.date ? ' · ' + [dateLabel(a.date), a.time].filter(Boolean).join(' ') : '');
+    }
+    if (a.type === 'shop') {
+      const r = await Shopping.add(a.items, a.group_id ? Number(a.group_id) : null);
+      return 'Añadido a la compra · ' + r.length + (r.length === 1 ? ' producto' : ' productos');
     }
     const payload = { type: a.kind, amount: a.amount, category_id: a.category_id || null, date: a.date || ymd(today()), description: a.title || '' };
     if (a.scope === 'grupo' && typeof group !== 'undefined' && group) { payload.group_id = group.id; payload.paid_by = me.id; }
     const data = await api('?resource=movements', { method: 'POST', body: JSON.stringify(payload) });
     movements.unshift(data);
+    if (a.kind === 'gasto' && window.Budgets) { const w = Budgets.checkAfter(a.category_id || 0, a.amount); if (w) setTimeout(() => showToast(w), 1200); }   // aviso si se acerca al presupuesto
     return (a.kind === 'gasto' ? 'Gasto' : 'Ingreso') + ' apuntado · ' + money(a.amount);
   }
   async function submit() {
@@ -323,8 +372,9 @@
         if (!ok) throw new Error('No se pudo guardar. Revisa que tengas una categoría de tareas.');
         msg = ok === 1 ? 'Apuntado' : `${ok} cosas apuntadas`;
       } else {
-        msg = await create(st.kind === 'task'
-          ? { type: 'task', title: st.title.trim(), date: st.date, time: st.time, remind: st.remind, category_id: (effCat() || {}).id || null }
+        msg = await create(st.kind === 'compra' ? { type: 'shop', items: st.items, group_id: st.shopGroup }
+          : st.kind === 'task'
+          ? { type: 'task', title: st.title.trim(), date: st.date, time: st.time, remind: st.remind, priority: st.priority, repeat: st.repeat, category_id: (effCat() || {}).id || null }
           : { type: 'mov', kind: st.kind, title: st.title.trim(), amount: st.amount, date: st.date, category_id: (effCat() || {}).id || null, scope: st.scope });
       }
       $('capDoneTxt').textContent = msg; $('cap').classList.add('ok');

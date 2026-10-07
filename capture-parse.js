@@ -25,8 +25,18 @@
     opts = opts || {};
     const orig = String(text || '');
     let n = norm(orig);
-    const out = { kind: null, title: '', amount: null, date: null, time: null, remind: null, hits: {} };
+    const out = { kind: null, title: '', amount: null, date: null, time: null, remind: null, priority: 0, repeat: null, items: [], hits: {} };
     const cuts = [];
+
+    /* ---- lista de la compra: "añade leche y huevos a la compra", "compra: pan, 2 manzanas" ---- */
+    {
+      const sm = /\b(?:a|en|para) la (?:lista de la )?compra\b/.exec(n) || /^\s*(?:lista de (?:la )?)?compra\s*[:\-]\s*/.exec(n);
+      if (sm) {
+        let body = (orig.slice(0, sm.index) + ' ' + orig.slice(sm.index + sm[0].length)).replace(/^\s*(?:por favor\s+)?(?:apuntame|anotame|apunta|anota|añade|añademe|agrega|pon|ponme|mete|incluye|necesito|falta|faltan|hay que comprar|tengo que comprar|comprar)\b[:\s]*/i, '').trim();
+        const items = body.split(/\s*(?:,|;|\n|\s+y\s+|\s+e\s+)\s*/i).map(x => x.replace(/^(?:el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/[.\s]+$/, '').trim()).filter(Boolean);
+        if (items.length) { out.kind = 'compra'; out.items = items.map(x => x.charAt(0).toUpperCase() + x.slice(1)); out.title = body; return out; }
+      }
+    }
     const take = (re, key) => {                         // busca, apunta el trozo para borrarlo del título y lo tapa para que no lo vuelva a usar otra regla
       const m = re.exec(n); if (!m) return null;
       cuts.push([m.index, m.index + m[0].length]);
@@ -49,6 +59,23 @@
         n = n.slice(0, a) + ' '.repeat(b - a) + n.slice(b);
       }
     }
+
+    /* ---- prioridad ---- */
+    if (take(/\b(urgente|muy importante|importante|prioridad alta|alta prioridad)\b|!!!/, 'priority')) out.priority = 3;
+    else if (take(/\b(prioridad media|media prioridad)\b/, 'priority')) out.priority = 2;
+    else if (take(/\b(prioridad baja|baja prioridad|sin prisa)\b/, 'priority')) out.priority = 1;
+
+    /* ---- repetición ---- */
+    if ((m = take(new RegExp('\\b(?:todos los|cada)\\s+(' + DAYS.filter(Boolean).join('|') + ')\\b'), 'repeat'))) {
+      out.repeat = 'weekly';
+      let diff = (DAYS.indexOf(m[1]) - today.getDay() + 7) % 7; if (diff === 0) diff = 7;
+      setDate(addDays(today, diff));
+    }
+    else if (take(/\b(de lunes a viernes|entre semana|dias laborables|laborables)\b/, 'repeat')) out.repeat = 'weekdays';
+    else if (take(/\b(todos los dias|cada dia|a diario|diariamente|diario)\b/, 'repeat')) out.repeat = 'daily';
+    else if (take(/\b(todas las semanas|cada semana|semanalmente|semanal)\b/, 'repeat')) out.repeat = 'weekly';
+    else if (take(/\b(todos los meses|cada mes|mensualmente|mensual)\b/, 'repeat')) out.repeat = 'monthly';
+    else if (take(/\b(todos los anos|cada ano|anualmente|anual)\b/, 'repeat')) out.repeat = 'yearly';
 
     /* ---- aviso ---- */
     if (take(/\b(recuerdame|avisame|recordatorio|recordarme|no se me olvide)\b( que)?/, null)) out.remind = 0;

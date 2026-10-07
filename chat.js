@@ -17,14 +17,22 @@
     mic: '<svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M5 15V6a2 2 0 0 1 2-2h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     fresh: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    chev: '<svg viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h10M4 17h16" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7h9M18 7h1M5 17h1M10 17h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="17" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>',
     edit: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3zM14 7l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9.5 7V5h5v2M7 7l1 12h8l1-12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
 
-  window.chatReset = () => { convs = []; activeId = null; msgs = []; settings = { about: '', style: '' }; remaining = null; lastUser = null; };
-  let convs = [], activeId = null, msgs = [], settings = { about: '', style: '' };
+  window.chatReset = () => { convs = []; activeId = null; msgs = []; settings = { about: '', style: '', data_access: false }; remaining = null; lastUser = null; };
+  const TOOL_LABEL = { consultar_tareas: 'tus tareas', resumen_gastos: 'tus gastos', listar_movimientos: 'tus movimientos', consultar_presupuestos: 'tus presupuestos', buscar_notas: 'tus notas', ver_lista_compra: 'tu lista de la compra' };
+  const DATA_SUGGESTIONS = [
+    ['¿Qué tengo pendiente?', '¿Qué tengo pendiente esta semana? Ordénalo por fecha.'],
+    ['Gastos del mes', '¿Cuánto he gastado este mes y en qué categorías?'],
+    ['Mis presupuestos', '¿Cómo voy con mis presupuestos este mes?'],
+    ['¿Qué falta en la compra?', '¿Qué hay pendiente en mi lista de la compra?'],
+  ];
+  let convs = [], activeId = null, msgs = [], settings = { about: '', style: '', data_access: false };
   let busy = false, rec = null, remaining = null, mdMod = null, built = false, lastUser = null;
 
   async function call(payload) {
@@ -45,6 +53,7 @@
     root.innerHTML = `
       <div class="chat-shell">
         <aside class="chat-side" id="chatSide">
+          <div class="cs-title-row"><b>Conversaciones</b><button class="cs-close" id="csClose" type="button" aria-label="Cerrar">${xSvg()}</button></div>
           <div class="cs-head"><button class="cs-new" id="csNew" type="button">${ic.fresh}<span>Nueva conversación</span></button></div>
           <div class="cs-list" id="chatList"></div>
           <div class="cs-foot"><button class="cs-set" id="csSet" type="button">${ic.gear}<span>Instrucciones personales</span><i class="cs-dot" id="csDot"></i></button></div>
@@ -52,9 +61,10 @@
         <div class="chat-backdrop" id="chatBackdrop"></div>
         <div class="chat">
           <div class="chat-top">
-            <div class="chat-id"><button class="chat-ghost icon only-sm" id="chatHist" type="button" aria-label="Historial">${ic.list}</button><span class="orb sm"></span>
-              <div><b id="chatTitle">Nueva conversación</b><small id="chatSub">Recuerda lo que hablamos en cada chat</small></div></div>
-            <div class="chat-actions"><button class="chat-ghost" id="chatSet" type="button" title="Instrucciones personales" aria-label="Instrucciones personales">${ic.gear}<span>Instrucciones</span></button></div>
+            <button class="chat-id" id="chatHist" type="button" aria-label="Ver mis conversaciones"><span class="orb sm"></span>
+              <div><b id="chatTitle">Nueva conversación</b><small><span class="d-only">Recuerda lo que hablamos en cada chat</span><span class="m-only" id="chatCount">Toca para ver tus conversaciones</span></small></div><span class="chev">${ic.chev}</span></button>
+            <div class="chat-actions"><button class="chat-ghost" id="chatNewTop" type="button" aria-label="Nueva conversación">${ic.fresh}<span>Nueva</span></button>
+              <button class="chat-ghost icon" id="chatSet" type="button" title="Instrucciones y ajustes" aria-label="Instrucciones y ajustes">${ic.gear}</button></div>
           </div>
           <div class="chat-scroll" id="chatScroll"><div class="chat-feed" id="chatFeed"></div></div>
           <div class="chat-composer">
@@ -78,9 +88,11 @@
     $('chatSend').onclick = submit;
     if (SR && $('chatMic')) $('chatMic').onclick = toggleMic;
     $('csNew').onclick = () => { newChat(); closeSide(); };
+    $('chatNewTop').onclick = () => newChat();
     $('csSet').onclick = $('chatSet').onclick = () => { closeSide(); openSettings(); };
-    $('chatHist').onclick = () => $('chatSide').classList.add('open') || $('chatBackdrop').classList.add('open');
+    $('chatHist').onclick = () => { if (matchMedia('(max-width:860px)').matches) { $('chatSide').classList.add('open'); $('chatBackdrop').classList.add('open'); } };
     $('chatBackdrop').onclick = closeSide;
+    $('csClose').onclick = closeSide;
     function submit() { const t = input.value; if (!t.trim() || busy) return; input.value = ''; grow(); ask(t); }
     built = true;
     paintFoot(); paintList(); paintFeed();
@@ -91,7 +103,7 @@
   async function init() {
     try {
       const [l, s] = await Promise.all([call({ action: 'list' }), call({ action: 'settings_get' })]);
-      convs = l.conversations; settings = { about: s.about || '', style: s.style || '' };
+      convs = l.conversations; settings = { about: s.about || '', style: s.style || '', data_access: !!s.data_access };
       paintList(); paintDot();
       const last = Number((() => { try { return localStorage.getItem(lastKey()); } catch (e) { return 0; } })());
       if (!activeId && last && convs.some(c => c.id === last)) await openConv(last);
@@ -107,6 +119,7 @@
   }
   function paintList() {
     const box = $('chatList'); if (!box) return;
+    const cnt = $('chatCount'); if (cnt) cnt.textContent = convs.length ? `${convs.length} ${convs.length === 1 ? 'conversación' : 'conversaciones'}` : 'Toca para ver el historial';
     if (!convs.length) { box.innerHTML = '<div class="cs-empty">Aquí aparecerán tus conversaciones.</div>'; return; }
     box.innerHTML = '';
     let last = '';
@@ -165,7 +178,7 @@
     const f = $('chatFoot'); if (!f) return;
     f.textContent = remaining != null && remaining <= 8 ? `Te quedan ${remaining} mensajes de IA hoy.` : 'La IA puede equivocarse. Tus mensajes se envían a Groq y se guardan en tu cuenta.';
   }
-  function paintDot() { const d = $('csDot'); if (d) d.style.display = (settings.about || settings.style) ? '' : 'none'; }
+  function paintDot() { const d = $('csDot'); if (d) d.style.display = (settings.about || settings.style || settings.data_access) ? '' : 'none'; }
 
   /* ---------- mensajes ---------- */
   function paintFeed() {
@@ -177,19 +190,23 @@
   }
   function emptyState() {
     const d = document.createElement('div'); d.className = 'chat-empty';
-    d.innerHTML = `<span class="orb lg"></span><h2>¿En qué te echo una mano?</h2><p>Recuerdo lo que hablamos en cada conversación. Puedes decirme cómo quieres que te responda en «Instrucciones».</p>
-      <div class="chat-sugg">${SUGGESTIONS.map((s, i) => `<button type="button" data-i="${i}">${escapeHtml(s[0])}</button>`).join('')}</div>`;
-    d.querySelectorAll('button').forEach(b => { b.onclick = () => ask(SUGGESTIONS[b.dataset.i][1]); });
+    const list = settings.data_access ? DATA_SUGGESTIONS : SUGGESTIONS;
+    d.innerHTML = `<span class="orb lg"></span><h2>¿En qué te echo una mano?</h2><p>${settings.data_access ? 'Puedo consultar tus tareas, gastos, presupuestos, notas y lista de la compra. Pregúntame lo que quieras sobre ellos.' : 'Recuerdo lo que hablamos en cada conversación. Puedes decirme cómo quieres que te responda en los ajustes.'}</p>
+      <div class="chat-sugg">${list.map((s, i) => `<button type="button" data-i="${i}">${escapeHtml(s[0])}</button>`).join('')}</div>
+      ${settings.data_access ? '' : '<button type="button" class="chat-data-cta" id="chatDataOn"><b>Quiero preguntarte por mis datos</b><span>Activa «Consultar mis datos» y sabré cuánto gastas, qué tienes pendiente…</span></button>'}`;
+    d.querySelectorAll('.chat-sugg button').forEach(b => { b.onclick = () => ask(list[b.dataset.i][1]); });
+    const cta = d.querySelector('#chatDataOn'); if (cta) cta.onclick = openSettings;
     return d;
   }
+  function paintFeedIfEmpty() { if (!msgs.length) paintFeed(); }
   function userEl(text) {
     const el = document.createElement('div'); el.className = 'msg user';
     const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; el.appendChild(b);
     return el;
   }
-  function aiEl(text, animate) {
+  function aiEl(text, animate, tools) {
     const el = document.createElement('div'); el.className = 'msg ai';
-    el.innerHTML = '<span class="orb xs"></span><div class="ai-col"><div class="bubble note-rendered"></div><div class="msg-actions"><button type="button" class="chat-ghost sm" aria-label="Copiar">' + ic.copy + '<span>Copiar</span></button></div></div>';
+    el.innerHTML = '<span class="orb xs"></span><div class="ai-col"><div class="bubble note-rendered"></div>' + (tools && tools.length ? '<div class="msg-tools">🔎 Consultó ' + [...new Set(tools.map(t => TOOL_LABEL[t] || t))].join(', ') + '</div>' : '') + '<div class="msg-actions"><button type="button" class="chat-ghost sm" aria-label="Copiar">' + ic.copy + '<span>Copiar</span></button></div></div>';
     const bubble = el.querySelector('.bubble');
     toHtml(text).then(html => {
       bubble.innerHTML = html;
@@ -242,7 +259,7 @@
       $('chatTitle').textContent = d.conversation.title;
       if (isNew || true) paintList();
       typing.remove();
-      feed.appendChild(aiEl(d.reply, true));
+      feed.appendChild(aiEl(d.reply, true, d.tools_used));
       lastUser = null;
       if (window.MobileX) MobileX.haptic(8);
     } catch (e) {
@@ -262,27 +279,28 @@
       sheet = document.createElement('div');
       sheet.innerHTML = `<div class="modal-backdrop" id="csBackdrop" style="z-index:140"></div>
         <div class="modal-sheet" id="csSheet" style="z-index:141;max-width:520px;"><div class="modal-handle"></div>
-          <div class="modal-header"><h3>Instrucciones personales</h3><button class="modal-close" id="csClose">${xSvg()}</button></div>
+          <div class="modal-header"><h3>Instrucciones y ajustes</h3><button class="modal-close" id="csSheetClose">${xSvg()}</button></div>
           <div class="modal-body">
-            <p class="cs-help">Se aplican a <b>todas</b> tus conversaciones. Escribe lo que quieras que el asistente tenga siempre en cuenta.</p>
+            <label class="cs-sw"><span><b>Consultar mis datos</b><small>Permite que el chat lea tus tareas, gastos, presupuestos, notas y lista de la compra para responder. Solo lectura. Para contestar, se envían a Groq únicamente los datos que la pregunta necesita.</small></span><input type="checkbox" id="csData"></label>
+            <p class="cs-help">Las instrucciones se aplican a <b>todas</b> tus conversaciones. Escribe lo que quieras que el asistente tenga siempre en cuenta.</p>
             <div class="cs-field"><label for="csAbout">¿Qué quieres que sepa de ti?</label><textarea id="csAbout" rows="4" maxlength="1500" placeholder="Por ejemplo: Me llamo Jesús, soy desarrollador web, vivo en Madrid y trabajo con PHP y JavaScript."></textarea><small id="csAboutN"></small></div>
             <div class="cs-field"><label for="csStyle">¿Cómo quieres que responda?</label><textarea id="csStyle" rows="4" maxlength="1500" placeholder="Por ejemplo: Respuestas cortas y directas, con ejemplos. Tutéame y evita los rodeos."></textarea><small id="csStyleN"></small></div>
           </div>
           <div class="modal-footer"><button class="fin-save" id="csSave" style="width:100%;">Guardar instrucciones</button></div></div>`;
       document.body.append(...sheet.children);
       const close = () => { $('csBackdrop').classList.remove('open'); $('csSheet').classList.remove('open'); };
-      $('csBackdrop').onclick = $('csClose').onclick = close;
+      $('csBackdrop').onclick = $('csSheetClose').onclick = close;
       const cnt = () => { $('csAboutN').textContent = $('csAbout').value.length + ' / 1500'; $('csStyleN').textContent = $('csStyle').value.length + ' / 1500'; };
       $('csAbout').oninput = $('csStyle').oninput = cnt;
       $('csSave').onclick = async () => {
         try {
-          const r = await call({ action: 'settings_save', about: $('csAbout').value, style: $('csStyle').value });
-          settings = { about: r.about, style: r.style }; paintDot(); close(); showToast('Instrucciones guardadas.');
+          const r = await call({ action: 'settings_save', about: $('csAbout').value, style: $('csStyle').value, data_access: $('csData').checked });
+          settings = { about: r.about, style: r.style, data_access: !!r.data_access }; paintDot(); paintFeedIfEmpty(); close(); showToast('Ajustes guardados.');
         } catch (e) { showToast(e.message); }
       };
       sheet.cnt = cnt;
     }
-    $('csAbout').value = settings.about; $('csStyle').value = settings.style; sheet.cnt();
+    $('csAbout').value = settings.about; $('csStyle').value = settings.style; $('csData').checked = !!settings.data_access; sheet.cnt();
     $('csBackdrop').classList.add('open'); $('csSheet').classList.add('open');
   }
 
