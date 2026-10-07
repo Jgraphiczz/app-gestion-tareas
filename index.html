@@ -687,7 +687,7 @@
 
     #section-notas{flex-direction:column;}
     .notes-list-pane{width:100%;border-right:none;display:flex;}
-    .notes-editor-pane{display:none;position:fixed;inset:0;background:var(--card);z-index:70;padding-bottom:var(--safe-b);}
+    .notes-editor-pane{display:none;position:fixed;inset:0;background:var(--card);z-index:120;padding-bottom:var(--safe-b);}
     #section-notas.showing-editor .notes-list-pane{display:none;}
     #section-notas.showing-editor .notes-editor-pane{display:flex;}
     .note-back-btn{display:flex;}
@@ -959,13 +959,13 @@
   .toggle-group,.seg{border-radius:12px;}
 
   @media (max-width:860px){
-    :root{--toast-b:100px;--bottom-ui:calc(88px + var(--safe-b));}
-    .content{padding-bottom:calc(96px + var(--safe-b));}
-    .mobilenav{left:12px;right:12px;bottom:calc(10px + var(--safe-b));padding:6px;border-radius:24px;border:1px solid var(--line);
-      background:var(--glass);backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 20px 44px -14px rgba(0,0,0,.35);}
-    .mobilenav button{border-radius:18px;font-size:10px;font-weight:600;gap:4px;padding:8px 2px;}
+    :root{--toast-b:84px;--bottom-ui:calc(64px + var(--safe-b));}
+    .content{padding-bottom:calc(84px + var(--safe-b));}
+    .mobilenav{left:0;right:0;bottom:0;padding:6px 8px calc(6px + var(--safe-b));border-radius:0;border:none;border-top:1px solid var(--line);
+      background:var(--glass);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);box-shadow:0 -8px 30px -18px rgba(0,0,0,.35);}
+    .mobilenav button{border-radius:14px;font-size:10px;font-weight:600;gap:4px;padding:7px 2px;}
     .mobilenav button.active{background:color-mix(in srgb,var(--primary) 14%,transparent);color:var(--primary);}
-    .fab{bottom:calc(100px + var(--safe-b));right:16px;width:54px;height:54px;border-radius:18px;}
+    .fab{bottom:calc(80px + var(--safe-b));right:16px;width:54px;height:54px;border-radius:18px;}
     .modal-sheet{border-radius:24px 24px 0 0;}
     .app-header{border-bottom-color:transparent;}
   }
@@ -1115,7 +1115,7 @@
   @media (max-width:860px){
     html.in-app,html.in-app body{height:100%;overflow:hidden;}
     html.in-app #shell{height:100%;height:100dvh;min-height:0;overflow:hidden;}
-    html.in-app .content{height:100%;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+    html.in-app .content{height:100%;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;}
     html.in-app .content > .section{flex-shrink:0;}
   }
 
@@ -1152,8 +1152,23 @@
   .cal-title::first-letter,.cal-panel h3::first-letter,.weather-hero .wh-desc::first-letter{text-transform:uppercase;}
   .task-del,.mov-edit,.icon-btn{padding:9px;} .task-del{margin:-4px -5px -4px 0;}
   .hy-more,.sp-clear{padding:9px 6px;min-height:34px;}
-  @media (min-width:600px) and (max-width:860px){ .mobilenav{max-width:560px;margin-left:auto;margin-right:auto;} }
   @media (max-width:700px){ .hy-grid{grid-template-columns:minmax(0,1fr) !important;} }
+
+  /* nota abierta en móvil: pantalla completa, sin menú inferior ni botón flotante */
+  @media (max-width:860px){ body.editor-open .mobilenav,body.editor-open .fab{display:none !important;} }
+
+  /* resumen dentro de Gastos */
+  .sum-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 10px;} .sum-head h3{font-size:17px;}
+  #gastosSummary{margin-bottom:6px;}
+  #gastosSummary .summary-row{margin-bottom:12px;}
+  .stats-more{margin:14px 0 18px;background:var(--card);box-shadow:var(--shadow);border-radius:18px;padding:0 16px;}
+  .stats-more > summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:600;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .stats-more > summary::-webkit-details-marker{display:none;}
+  .stats-more > summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--ink-soft);border-bottom:2px solid var(--ink-soft);transform:rotate(45deg);transition:transform .2s;margin-right:4px;}
+  .stats-more[open] > summary::after{transform:rotate(-135deg);}
+  .stats-more .stats-section{padding-bottom:6px;}
+
+  .reset-filters-btn{padding:9px 6px;min-height:34px;}
 </style>
 </head>
 <body>
@@ -1229,7 +1244,7 @@ let currentSection = 'hoy';
 let authMode = 'login';
 
 // Tareas
-let activeCat = null, showUpcoming = false, showOverdue = false, activeTagFilter = null, pendingTagForNewTask = null;
+let activeCat = null, showUpcoming = true, showOverdue = false, activeTagFilter = null, pendingTagForNewTask = null;
 let pastMode = 'overdue', pastRangeDays = 30;     // vista "Vencidas y anteriores": por defecto 1 mes
 const PAST_RANGES = [{d:30,l:'Último mes'},{d:90,l:'Últimos 3 meses'},{d:180,l:'Últimos 6 meses'},{d:365,l:'Último año'},{d:0,l:'Todo'}];
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -1347,6 +1362,7 @@ function render(){
   const app = document.getElementById('app');
   if (!me) { renderAuth(app); return; }
   if (!document.getElementById('shell')) buildShell(app);
+  if (currentSection === 'estadisticas') currentSection = 'gastos';          // los resúmenes ahora viven dentro de Gastos
   if (currentSection !== 'admin' && currentSection !== 'perfil' && modState(currentSection) === 'hidden') currentSection = (navItems()[0] || {id:'perfil'}).id;
   document.querySelectorAll('.navbtn,.mobilenav button,.drawer-nav-item').forEach(b => b.classList.toggle('active', b.dataset.nav === currentSection));
   const moreBtn = document.getElementById('mobileMoreBtn');
@@ -1455,7 +1471,6 @@ function navItems(){
     {id:'notas', ic:noteIcon(), label:'Notas'},
     {id:'diagramas', ic:diagramIcon(), label:'Diagramas'},
     {id:'gastos', ic:walletIcon(), label:'Gastos'},
-    {id:'estadisticas', ic:chartIcon(), label:'Stats'},
     {id:'tiempo', ic:weatherIcon(), label:'Tiempo'},
     {id:'grupo', ic:peopleIcon(), label:'Grupos'},
   ];
@@ -1469,7 +1484,7 @@ function navLabel(i){ return i.label + (i.locked ? lockIcon() : ''); }
 function buildShell(app){
   document.documentElement.classList.add('in-app');
   const items = navItems();
-  const PREF = ['hoy','tareas','chat','compra','gastos','calendario','notas','estadisticas','diagramas','tiempo','grupo'];
+  const PREF = ['hoy','tareas','chat','compra','gastos','calendario','notas','diagramas','tiempo','grupo'];
   MOBILE_PRIMARY = PREF.filter(id => items.some(i => i.id === id)).slice(0, 5);
   app.innerHTML = `
     <div id="shell">
@@ -1615,8 +1630,10 @@ function buildShell(app){
       <div class="mobilenav">${items.filter(i => MOBILE_PRIMARY.includes(i.id)).map(i => `<button data-nav="${i.id}"><span class="ic">${i.ic}</span>${navLabel(i)}</button>`).join('')}<button id="mobileMoreBtn"><span class="ic">${menuIcon()}</span>Más</button></div>
     </div>
   `;
-  document.querySelectorAll('[data-nav]').forEach(btn => { btn.onclick = () => { currentSection = btn.dataset.nav; render(); }; });
-  document.querySelectorAll('.drawer-nav-item').forEach(btn => { btn.onclick = () => { currentSection = btn.dataset.nav; closeDrawer(); render(); }; });
+  // al entrar en Tareas desde otra sección se abre en «Próximas» (no en la primera categoría)
+  const goSection = id => { if (id === 'tareas' && currentSection !== 'tareas') { showUpcoming = true; showOverdue = false; activeTagFilter = null; } currentSection = id; };
+  document.querySelectorAll('[data-nav]').forEach(btn => { btn.onclick = () => { goSection(btn.dataset.nav); render(); }; });
+  document.querySelectorAll('.drawer-nav-item').forEach(btn => { btn.onclick = () => { goSection(btn.dataset.nav); closeDrawer(); render(); }; });
   document.getElementById('logoutBtnSide').onclick = logout;
   document.getElementById('menuBtn').onclick = openDrawer;
   document.getElementById('mobileMoreBtn').onclick = openDrawer;
@@ -2933,6 +2950,7 @@ function noteRelDate(iso){
 function renderNotas(){
   const section = document.getElementById('section-notas');
   section.classList.toggle('showing-editor', mobileShowingEditor);
+  document.body.classList.toggle('editor-open', mobileShowingEditor);       // en móvil oculta el menú inferior mientras se edita
   renderNotesListPane();
   renderNoteEditor();
 }
@@ -3479,14 +3497,11 @@ function renderGastos(){
   const totals=movementTotals(movements);
   el.innerHTML = `
     <div class="fin-header"><h2>Gastos e ingresos</h2></div>
-    <div class="summary-row">
-      <div class="summary-card gasto"><div class="label">Total gastos</div><div class="value">${money(totals.gasto)}</div></div>
-      <div class="summary-card ingreso"><div class="label">Total ingresos</div><div class="value">${money(totals.ingreso)}</div></div>
-      <div class="summary-card balance"><div class="label">Balance en caja</div><div class="value">${money(totals.ingreso-totals.gasto)}</div></div>
-    </div>
+    <div id="gastosSummary"></div>
     <div class="gastos-tabs">${GASTOS_TABS.map(t => `<button class="gastos-tab ${gastosTab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}</div>
     <div id="gastosTabContent"></div>
   `;
+  if (modState('estadisticas') === 'allow') renderStats('gastosSummary', true); else document.getElementById('gastosSummary').remove();
   el.querySelectorAll('.gastos-tab').forEach(b => b.onclick = () => { gastosTab = b.dataset.tab; renderGastos(); });
   if(gastosTab === 'movimientos') renderMovimientosTab();
   else if(gastosTab === 'presupuestos' && window.renderPresupuestosTab) renderPresupuestosTab();
@@ -3993,8 +4008,8 @@ function periodRange(period, offset=0){
 function inRange(dateStr, range){ const d=new Date(dateStr+'T00:00:00'); return d>=range.start && d<range.end; }
 function filterByRange(list, range){ return list.filter(m=>inRange(m.date, range)); }
 
-function renderStats(){
-  const el=document.getElementById('statsMain');
+function renderStats(containerId, embedded){
+  const el=document.getElementById(containerId || 'statsMain');
   const range=periodRange(statsPeriod,0), prevRange=periodRange(statsPeriod,1);
   const current=filterByRange(movements, range), previous=filterByRange(movements, prevRange);
   const totals=movementTotals(current), prevTotals=movementTotals(previous);
@@ -4013,9 +4028,10 @@ function renderStats(){
   const topCatName = topCatEntry ? (financeCategories.find(c => c.id == topCatEntry[0])?.name || 'Sin categoría') : '—';
   const savingsRate = totals.ingreso > 0 ? Math.round(((totals.ingreso - totals.gasto) / totals.ingreso) * 100) : null;
 
+  const allTime = movementTotals(movements);
   el.innerHTML = `
-    <div class="fin-header">
-      <h2>Estadísticas</h2>
+    <div class="${embedded ? 'sum-head' : 'fin-header'}">
+      ${embedded ? '<h3>Resumen</h3>' : '<h2>Estadísticas</h2>'}
       <select class="period-sel" id="statsPeriodSel">
         <option value="week">Esta semana</option><option value="month">Este mes</option><option value="quarter">Este trimestre</option><option value="year">Este año</option><option value="all">Todo</option>
       </select>
@@ -4031,16 +4047,20 @@ function renderStats(){
       <div class="insight-card"><div class="ic-wrap" style="background:var(--peach);color:var(--peach-ink);">${trophyIcon()}</div><div><div class="ilabel">Categoría con más gasto</div><div class="ivalue">${escapeHtml(topCatName)}</div>${topCatEntry ? `<div class="isub">${money(topCatEntry[1])}</div>` : ''}</div></div>
       <div class="insight-card"><div class="ic-wrap" style="background:var(--rose);color:var(--rose-ink);">${sparkleIcon()}</div><div><div class="ilabel">Mayor gasto individual</div><div class="ivalue">${biggest ? money(biggest.amount) : '—'}</div>${biggest ? `<div class="isub">${escapeHtml(biggest.description || 'Sin descripción')}</div>` : ''}</div></div>
       ${savingsRate !== null ? `<div class="insight-card"><div class="ic-wrap" style="background:var(--mint);color:var(--mint-ink);">${walletIcon()}</div><div><div class="ilabel">Tasa de ahorro</div><div class="ivalue">${savingsRate}%</div><div class="isub">del ingreso no gastado</div></div></div>` : ''}
+      ${embedded ? `<div class="insight-card"><div class="ic-wrap" style="background:var(--sky);color:var(--sky-ink);">${walletIcon()}</div><div><div class="ilabel">En caja (total)</div><div class="ivalue">${money(allTime.ingreso-allTime.gasto)}</div><div class="isub">ingresos − gastos de siempre</div></div></div>` : ''}
     </div>
 
+    ${embedded ? `<details class="stats-more" id="statsMore" ${(() => { try { return localStorage.getItem('statsMoreOpen') === '1' ? 'open' : ''; } catch(e) { return ''; } })()}><summary>Análisis completo: categorías, tendencia y evolución</summary>` : ''}
     <div class="stats-section"><h3>Ranking de categorías de gasto</h3><div id="gastoRanking"></div></div>
     <div class="stats-section"><h3>Ranking de categorías de ingreso</h3><div id="ingresoRanking"></div></div>
     ${group ? `<div class="stats-section"><h3>Gastos del grupo por quién pagó</h3><div id="paidByBars"></div></div>` : ''}
     <div class="stats-section"><h3>Tendencia (últimos 6 meses)</h3><div id="trendChart"></div></div>
     <div class="stats-section"><h3>Evolución dentro del periodo</h3><div id="timeTable"></div></div>
+    ${embedded ? '</details>' : ''}
   `;
   document.getElementById('statsPeriodSel').value=statsPeriod;
-  document.getElementById('statsPeriodSel').onchange=e=>{statsPeriod=e.target.value;renderStats();};
+  document.getElementById('statsPeriodSel').onchange=e=>{statsPeriod=e.target.value;renderStats(containerId, embedded);};
+  const more=document.getElementById('statsMore'); if(more) more.ontoggle=()=>{ try{ localStorage.setItem('statsMoreOpen', more.open ? '1' : '0'); }catch(e){} };
   renderRanking('gastoRanking', current.filter(m=>m.type==='gasto'), totals.gasto);
   renderRanking('ingresoRanking', current.filter(m=>m.type==='ingreso'), totals.ingreso);
   if(group){
