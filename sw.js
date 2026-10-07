@@ -1,6 +1,6 @@
 // Service Worker — caché de la app (funciona sin conexión) y avisos push.
-const CACHE = 'gestion-v1';
-const SHELL = ['./', './index.html', './mobile.js', './notes-editor.js', './notes-rich.js', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'gestion-v2';
+const SHELL = ['./', './index.html', './mobile.js', './assistant.js', './notes-editor.js', './notes-rich.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
-    if (/\/(api|auth|push|send-reminders)\.php$/.test(url.pathname) || url.pathname.endsWith('/sw.js')) return;   // datos: siempre a la red
+    if (/\/(api|auth|assistant|push|send-reminders)\.php$/.test(url.pathname) || url.pathname.endsWith('/sw.js')) return;   // datos: siempre a la red
     if (url.pathname.includes('/diagrams/')) { event.respondWith(staleWhileRevalidate(req)); return; }
     event.respondWith(networkFirst(req, req.mode === 'navigate' ? './index.html' : null));
   } else if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
