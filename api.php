@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/perm.php';
 
 header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
@@ -315,12 +316,31 @@ if (empty($_SESSION['schema_v2'])) {
     try { ensureSchema($pdo); $_SESSION['schema_v2'] = 1; } catch (Exception $e) { /* sin permisos: las funciones nuevas se desactivan solas */ }
 }
 
+// Rol y permisos siempre frescos desde la base de datos (un cambio de rol o de módulos se nota al momento)
+$perm = permResolve($pdo, $me['id']);
+$_SESSION['user']['role'] = $perm['role'];
+$me['role'] = $perm['role'];
+
 try {
+    permAdminRoute($pdo, $resource, $method, $id, body());                 // roles y mensajes (solo administradores)
+    if ($mods = permResourceModules($resource)) permRequire($pdo, $me['id'], $mods);   // 403 con el mensaje configurado
+
     /* ===================== ADMIN: usuarios y grupos ===================== */
     if ($resource === 'users') {
         requireAdmin();
         if ($method === 'GET') {
-            $rows = $pdo->query('SELECT id, username, email, role, group_id, active, created_at FROM users ORDER BY created_at ASC')->fetchAll();
+            try { $rows = $pdo->query('SELECT id, username, email, role, role_id, group_id, active, created_at FROM users ORDER BY created_at ASC')->fetchAll(); }
+            catch (Exception $e) { $rows = $pdo->query('SELECT id, username, email, role, group_id, active, created_at FROM users ORDER BY created_at ASC')->fetchAll(); }
+            $roleNames = [];
+            try { foreach ($pdo->query('SELECT id, name, is_default FROM roles')->fetchAll() as $r) $roleNames[(int)$r['id']] = $r; } catch (Exception $e) {}
+            $defaultRole = null; foreach ($roleNames as $r) if ($r['is_default']) $defaultRole = $r;
+            foreach ($rows as &$row) {
+                $rid = isset($row['role_id']) && $row['role_id'] !== null ? (int)$row['role_id'] : null;
+                $rr = ($rid && isset($roleNames[$rid])) ? $roleNames[$rid] : $defaultRole;
+                $row['role_id'] = $rid;
+                $row['role_name'] = $row['role'] === 'admin' ? 'Administrador' : ($rr ? $rr['name'] : 'Usuario');
+            }
+            unset($row);
             out($rows);
         }
         if ($method === 'POST') {
@@ -332,14 +352,23 @@ try {
             $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, role, group_id) VALUES (?, ?, ?, ?, ?)');
             $stmt->execute([$username, $b['email'] ?? null, $hash, $b['role'] ?? 'user', $b['group_id'] ?? null]);
             $newId = $pdo->lastInsertId();
+            if (!empty($b['role_id'])) { try { $pdo->prepare('UPDATE users SET role_id = ? WHERE id = ? AND EXISTS (SELECT 1 FROM roles WHERE id = ?)')->execute([$b['role_id'], $newId, $b['role_id']]); } catch (Exception $e) {} }
             $row = $pdo->query("SELECT id, username, email, role, group_id, active, created_at FROM users WHERE id = $newId")->fetch();
             out($row, 201);
         }
         if ($method === 'PATCH' && $id) {
             $b = body();
+            if ((int)$id === (int)$me['id'] && ((array_key_exists('role', $b) && $b['role'] !== 'admin') || (array_key_exists('active', $b) && !$b['active'])))
+                out(['error' => 'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.'], 400);
+            if (array_key_exists('role', $b) && !in_array($b['role'], ['admin', 'user'], true)) out(['error' => 'rol no válido'], 400);
             $fields = []; $vals = [];
             foreach (['role', 'group_id', 'active', 'email'] as $f) {
                 if (array_key_exists($f, $b)) { $fields[] = "$f = ?"; $vals[] = $b[$f]; }
+            }
+            if (array_key_exists('role_id', $b)) {
+                $rid = $b['role_id'] ? (int)$b['role_id'] : null;
+                if ($rid) { $q = $pdo->prepare('SELECT id FROM roles WHERE id = ?'); $q->execute([$rid]); if (!$q->fetch()) out(['error' => 'El rol no existe.'], 400); }
+                $fields[] = 'role_id = ?'; $vals[] = $rid;
             }
             if (!empty($b['new_password'])) {
                 if (strlen($b['new_password']) < 6) out(['error' => 'la contraseña debe tener al menos 6 caracteres'], 400);
@@ -355,6 +384,11 @@ try {
         if ($method === 'DELETE' && $id) {
             if ((int)$id === (int)$me['id']) out(['error' => 'no puedes borrar tu propia cuenta de admin'], 400);
             $pdo->prepare("DELETE FROM shares WHERE recipient_type = 'user' AND recipient_id = ?")->execute([$id]);
+            try {                                                    // conversaciones y ajustes del chat de ese usuario
+                $pdo->prepare('DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_id = ?)')->execute([$id]);
+                $pdo->prepare('DELETE FROM chat_conversations WHERE user_id = ?')->execute([$id]);
+                $pdo->prepare('DELETE FROM chat_settings WHERE user_id = ?')->execute([$id]);
+            } catch (Exception $e) { /* el chat aún no se ha usado */ }
             $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
             out(['ok' => true]);
         }
@@ -454,12 +488,12 @@ try {
         $recStmt->execute([$me['id']]);
         $recurringItems = $recStmt->fetchAll();
 
-        out([
+        out(permFilterAll([
             'categories' => $categories, 'tags' => $tags, 'tasks' => $tasks,
             'finance_categories' => $financeCategories, 'movements' => $movements,
             'group' => $group, 'group_members' => $groupMembers, 'me' => $me,
             'notes' => $notes, 'weather_location' => $weatherLocation, 'weather_locations' => $weatherLocations, 'groups_data' => $groupsData, 'my_groups' => $myGroups, 'loans' => $loans, 'recurring_items' => $recurringItems,
-        ]);
+        ], $perm));
     }
 
     /* ===================== Mis grupos: crear, invitar, aceptar, salir ===================== */

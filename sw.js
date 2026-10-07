@@ -1,6 +1,6 @@
 // Service Worker — caché de la app (funciona sin conexión) y avisos push.
-const CACHE = 'gestion-v3';
-const SHELL = ['./', './index.html', './mobile.js', './assistant.js', './chat.js', './notes-editor.js', './notes-rich.js', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'gestion-v5';
+const SHELL = ['./', './index.html', './mobile.js', './capture-parse.js', './capture.js', './chat.js', './admin.js', './notes-editor.js', './notes-rich.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

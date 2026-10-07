@@ -108,9 +108,8 @@
     transition:background .15s,color .15s;padding:0;
   }
   .notif-toggle:hover{color:var(--primary);}
-  #themeBtn{margin-right:8px;}
-  #themeBtn svg{width:18px;height:18px;display:none;}
-  html[data-theme-pref="auto"] #themeBtn .th-auto,html:not([data-theme-pref]) #themeBtn .th-auto,html[data-theme-pref="light"] #themeBtn .th-light,html[data-theme-pref="dark"] #themeBtn .th-dark{display:block;}
+  [data-theme-toggle] svg{width:18px;height:18px;display:none;}
+  html[data-theme-pref="auto"] [data-theme-toggle] .th-auto,html:not([data-theme-pref]) [data-theme-toggle] .th-auto,html[data-theme-pref="light"] [data-theme-toggle] .th-light,html[data-theme-pref="dark"] [data-theme-toggle] .th-dark{display:block;}
   .notif-toggle.subscribed{color:var(--primary);background:var(--primary-soft);border-color:var(--primary);}
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
@@ -974,7 +973,8 @@
   /* ===== Chat ===== */
   #section-chat{flex-direction:column;}
   .chat-main{width:100%;}
-  .chat{max-width:860px;margin:0 auto;width:100%;height:calc(100dvh - var(--header-h,67px));display:flex;flex-direction:column;padding:0 24px;}
+  .chat-shell{display:grid;grid-template-columns:276px minmax(0,1fr);height:calc(100dvh - var(--header-h,67px));width:100%;}
+  .chat{max-width:860px;margin:0 auto;width:100%;height:100%;min-height:0;display:flex;flex-direction:column;padding:0 24px;}
   .chat-top{display:flex;align-items:center;justify-content:space-between;padding:16px 0 10px;flex-shrink:0;}
   .chat-id{display:flex;align-items:center;gap:11px;}
   .chat-id b{display:block;font-size:15px;letter-spacing:-.01em;}
@@ -1031,7 +1031,8 @@
   .chat-round svg,.chat-send svg{width:20px;height:20px;display:block;}
   .chat-foot{text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:9px;}
   @media (max-width:860px){
-    .chat{height:calc(100dvh - 52px - var(--safe-t) - var(--bottom-ui,0px));padding:0 14px;}
+    .chat-shell{display:block;height:calc(100dvh - 52px - var(--safe-t) - var(--bottom-ui,0px));}
+    .chat{padding:0 14px;}
     .chat-composer{padding-bottom:6px;}
     .chat-foot{display:none;}
     .chat-sugg{grid-template-columns:1fr 1fr;}
@@ -1040,14 +1041,93 @@
     body.chat-typing .content{padding-bottom:0;}
     body.chat-typing .chat-composer{padding-bottom:calc(8px + var(--safe-b));}
   }
+
+  /* cabecera: acciones agrupadas y alineadas */
+  .app-header{gap:10px;}
+  .hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .hdr-actions .header-weather{margin:0;}
+  .hdr-actions .notif-toggle{width:38px;height:38px;margin:0;flex-shrink:0;}
+  .drawer .th-txt::after{content:'Tema: automático';}
+  html[data-theme-pref="light"] .drawer .th-txt::after{content:'Tema: claro';}
+  html[data-theme-pref="dark"] .drawer .th-txt::after{content:'Tema: oscuro';}
+  .drawer-item [data-theme-toggle] svg,.drawer-item.th svg{width:17px;height:17px;}
+  .lockic{width:13px;height:13px;margin-left:5px;vertical-align:-1px;opacity:.7;flex-shrink:0;}
+  .mobilenav .lockic{display:block;position:absolute;top:5px;right:calc(50% - 22px);width:11px;height:11px;margin:0;}
+  .mobilenav button{position:relative;}
+  .locked-view{flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:40px 28px;min-height:60vh;}
+  .locked-view h2{font-size:clamp(20px,3vw,26px);margin-top:12px;}
+  .locked-view p{color:var(--ink-soft);max-width:420px;line-height:1.55;margin:0 0 10px;font-size:15px;}
+  .lock-orb{width:76px;height:76px;border-radius:26px;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);color:var(--primary);box-shadow:0 0 60px -6px color-mix(in srgb,var(--primary) 40%,transparent);}
+  .lock-orb .lockic{width:32px;height:32px;margin:0;opacity:1;}
+  @media (max-width:860px){
+    #themeBtn{display:none;}
+    .hdr-actions{gap:7px;}
+    .hdr-actions .header-weather .hw-loc{display:none;}
+    .hdr-actions .header-weather{padding:6px 10px 6px 8px;}
+    .app-header{gap:8px;padding-left:12px;padding-right:12px;}
+  }
+
+  /* chat: historial lateral, instrucciones */
+  .chat-side{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line);background:color-mix(in srgb,var(--card) 45%,transparent);padding:14px 10px 10px;}
+  .cs-head{padding:0 2px 10px;}
+  .cs-new{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600;font-size:13.5px;padding:11px 12px;border-radius:13px;cursor:pointer;box-shadow:var(--shadow);}
+  .cs-new:hover{border-color:color-mix(in srgb,var(--primary) 50%,var(--line));color:var(--primary);}
+  .cs-new svg{width:16px;height:16px;display:block;}
+  .cs-list{flex:1;min-height:0;overflow-y:auto;padding:0 2px;}
+  .cs-group{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 8px 5px;}
+  .cs-empty{font-size:13px;color:var(--ink-soft);padding:18px 10px;line-height:1.5;}
+  .cs-item{display:flex;align-items:center;gap:2px;border-radius:11px;position:relative;}
+  .cs-item.on{background:color-mix(in srgb,var(--primary) 12%,transparent);}
+  .cs-item:hover{background:color-mix(in srgb,var(--ink) 5%,transparent);} .cs-item.on:hover{background:color-mix(in srgb,var(--primary) 16%,transparent);}
+  .cs-title{flex:1;min-width:0;text-align:left;border:none;background:none;color:var(--ink);font-size:13.5px;font-weight:500;padding:9px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cs-item.on .cs-title{color:var(--primary);font-weight:600;}
+  .cs-acts{display:none;gap:1px;padding-right:4px;flex-shrink:0;} .cs-item:hover .cs-acts,.cs-acts.show{display:flex;}
+  @media (hover:none){.cs-acts{display:flex;}}
+  .cs-acts button{border:none;background:none;color:var(--ink-soft);padding:6px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;}
+  .cs-acts button:hover{background:var(--card);color:var(--primary);} .cs-acts svg{width:15px;height:15px;display:block;}
+  .cs-acts .yes{color:var(--rose-ink);}
+  .cs-ask{flex:1;font-size:13px;font-weight:600;padding:9px 10px;color:var(--rose-ink);}
+  .cs-edit{width:100%;margin:3px 4px;padding:7px 9px;border:1.5px solid var(--primary);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px !important;}
+  .cs-foot{padding:10px 2px 0;border-top:1px solid var(--line);margin-top:8px;}
+  .cs-set{width:100%;display:flex;align-items:center;gap:9px;border:none;background:none;color:var(--ink-soft);font-size:13px;font-weight:600;padding:9px 10px;border-radius:11px;cursor:pointer;text-align:left;}
+  .cs-set:hover{background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink);} .cs-set svg{width:17px;height:17px;display:block;flex-shrink:0;}
+  .cs-dot{width:7px;height:7px;border-radius:50%;background:var(--mint-ink);margin-left:auto;}
+  .chat-backdrop{display:none;}
+  .chat-ghost.icon{padding:8px;border-radius:12px;} .chat-ghost.icon svg{width:18px;height:18px;}
+  .only-sm{display:none !important;}
+  .chat-actions{display:flex;gap:8px;}
+  .cs-help{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.5;}
+  .cs-field{display:flex;flex-direction:column;gap:6px;} .cs-field label{font-size:13px;font-weight:600;}
+  .cs-field textarea{padding:12px 14px;border:1.5px solid var(--line);border-radius:13px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;line-height:1.5;resize:vertical;min-height:96px;}
+  .cs-field small{align-self:flex-end;font-size:11.5px;color:var(--ink-soft);}
+  @media (max-width:860px){
+    .only-sm{display:inline-flex !important;}
+    .chat-ghost span{display:none;} .chat-ghost.sm span{display:inline;}
+    .chat-side{position:fixed;top:0;left:0;bottom:0;width:min(86vw,320px);z-index:96;background:var(--card);padding-top:calc(14px + var(--safe-t));padding-bottom:calc(10px + var(--safe-b));
+      transform:translateX(-102%);transition:transform .28s cubic-bezier(.2,.7,.2,1);box-shadow:20px 0 50px -20px rgba(0,0,0,.4);}
+    .chat-side.open{transform:none;}
+    .chat-backdrop.open{display:block;position:fixed;inset:0;z-index:95;background:rgba(8,9,13,.45);backdrop-filter:blur(4px);}
+    .chat-id small{display:none;}
+  }
+
+  /* móvil: el documento no hace scroll, lo hace .content. Así las barras fijas (cabecera y menú inferior) nunca se mueven ni se
+     descolocan cuando el navegador encoge/estira su barra de direcciones o aparece/desaparece el teclado. */
+  @media (max-width:860px){
+    html.in-app,html.in-app body{height:100%;overflow:hidden;}
+    html.in-app #shell{height:100%;height:100dvh;min-height:0;overflow:hidden;}
+    html.in-app .content{height:100%;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+    html.in-app .content > .section{flex-shrink:0;}
+  }
 </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script src="./mobile.js"></script>
-<script src="./assistant.js"></script>
+<script src="./capture-parse.js"></script>
+<script src="./capture.js"></script>
 <script src="./chat.js"></script>
+<script src="./admin.js"></script>
 <script>
 const API_BASE = './api.php';
 const AUTH_BASE = './auth.php';
@@ -1057,7 +1137,7 @@ const PALETTE_INK = ['#5B54E0','#0F8F66','#C2640E','#D03A68','#1B6CC8','#94760A'
 const SNAP_KEYS = { '?resource=all': 'snap_all' };
 function snapGet(k){ try{ return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
 function snapSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
-function snapClear(){ try{ ['snap_all','snap_me'].forEach(k => localStorage.removeItem(k)); Object.keys(localStorage).filter(k => k.startsWith('chat_msgs_')).forEach(k => localStorage.removeItem(k)); } catch(e){} }
+function snapClear(){ try{ ['snap_all','snap_me'].forEach(k => localStorage.removeItem(k)); Object.keys(localStorage).filter(k => k.startsWith('chat_')).forEach(k => localStorage.removeItem(k)); } catch(e){} }
 async function api(path, options = {}) {
   const snapKey = !options.method && SNAP_KEYS[path];
   let res;
@@ -1073,6 +1153,7 @@ async function api(path, options = {}) {
     const e = await res.json().catch(()=>({error:'Error'}));
     const err = new Error(e.error || ('Error ' + res.status));
     err.status = res.status; err.data = e;
+    if (res.status === 403 && String(e.code || '').startsWith('module_')) showToast(e.error);   // mensaje de permisos configurado por el administrador
     throw err;
   }
   const out = res.status === 204 ? null : await res.json();
@@ -1222,6 +1303,7 @@ function render(){
   const app = document.getElementById('app');
   if (!me) { renderAuth(app); return; }
   if (!document.getElementById('shell')) buildShell(app);
+  if (currentSection !== 'admin' && currentSection !== 'perfil' && modState(currentSection) === 'hidden') currentSection = (navItems()[0] || {id:'perfil'}).id;
   document.querySelectorAll('.navbtn,.mobilenav button,.drawer-nav-item').forEach(b => b.classList.toggle('active', b.dataset.nav === currentSection));
   const moreBtn = document.getElementById('mobileMoreBtn');
   if (moreBtn) moreBtn.classList.toggle('active', !MOBILE_PRIMARY.includes(currentSection));
@@ -1229,12 +1311,25 @@ function render(){
   const sec = document.getElementById('section-' + currentSection);
   if (sec) sec.classList.add('active');
   const titles = { tareas:'Tareas', calendario:'Calendario', chat:'Chat', notas:'Notas', gastos:'Gastos', estadisticas:'Estadísticas', grupo:'Grupos', admin:'Administración', perfil:'Perfil', tiempo:'Tiempo', diagramas:'Diagramas' };
+  const lv = document.getElementById('lockedView');
+  const locked = currentSection !== 'admin' && currentSection !== 'perfil' && modState(currentSection) === 'locked';
+  if (lv) {
+    lv.style.display = locked ? 'flex' : 'none';
+    if (locked) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      const label = (navItems().find(i => i.id === currentSection) || {}).label || 'Módulo';
+      lv.innerHTML = `<div class="lock-orb">${lockIcon()}</div><h2>${escapeHtml(label)} no está disponible</h2><p>${escapeHtml(modMessage(currentSection))}</p>
+        <button class="btn btn-soft" id="lockedBack">Volver</button>`;
+      document.getElementById('lockedBack').onclick = () => { const first = navItems().find(i => !i.locked); currentSection = first ? first.id : 'perfil'; render(); };
+    }
+  }
   const titleEl = document.getElementById('headerTitle');
   if (titleEl) titleEl.textContent = titles[currentSection] || 'App Gestión Personal';
   renderNotifBtn();
   renderHeaderWeather();
   updateGroupBadge();
 
+  if (locked) { if (window.MobileX) MobileX.onRender(); return; }
   if (currentSection === 'tareas'){ renderTabs(); renderNewCatForm(); renderMain(); }
   if (currentSection === 'calendario') renderCalendario();
   if (currentSection === 'chat' && window.renderChat) renderChat();
@@ -1251,6 +1346,7 @@ function render(){
 
 /* ============================================================ AUTH SCREEN ============================================================ */
 function renderAuth(app){
+  document.documentElement.classList.remove('in-app');
   app.innerHTML = `
     <div class="auth-wrap"><div class="auth-card">
       <h1><span class="dot"></span>App Gestión Personal</h1>
@@ -1290,13 +1386,19 @@ async function submitAuth(){
 
 async function logout(){
   snapClear();
+  if(window.chatReset) chatReset();
   await authApi('?action=logout', { method:'POST' });
-  me = null; document.getElementById('shell')?.remove();
+  me = null; document.getElementById('shell')?.remove(); document.documentElement.classList.remove('in-app');
   render();
 }
 
 /* ============================================================ SHELL / NAV ============================================================ */
-const MOBILE_PRIMARY = ['tareas','calendario','chat','notas','gastos'];
+/* Módulos según el rol: allow = se usa · locked = se ve con candado y un mensaje · hidden = no aparece. Admin lo tiene todo. */
+function modState(id){ if(!me || me.role === 'admin') return 'allow'; return (me.modules && me.modules[id]) || 'allow'; }
+function modMessage(id){ const m = (me && me.messages) || {}; return m[id] || m._default || 'No tienes permiso para usar este módulo.'; }
+function modGate(id){ if(modState(id) === 'allow') return true; showToast(modMessage(id)); return false; }
+let MOBILE_PRIMARY = ['tareas','calendario','chat','notas','gastos'];
+function lockIcon(){ return '<svg class="lockic" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'; }
 function navItems(){
   const items = [
     {id:'tareas', ic:checklistIcon(), label:'Tareas'},
@@ -1309,18 +1411,23 @@ function navItems(){
     {id:'tiempo', ic:weatherIcon(), label:'Tiempo'},
     {id:'grupo', ic:peopleIcon(), label:'Grupos'},
   ];
-  if (me.role === 'admin') items.push({id:'admin', ic:shieldIcon(), label:'Admin'});
-  items.push({id:'perfil', ic:personIcon(), label:'Perfil'});
-  return items;
+  const out = items.filter(i => modState(i.id) !== 'hidden').map(i => ({ ...i, locked: modState(i.id) === 'locked' }));
+  if (me.role === 'admin') out.push({id:'admin', ic:shieldIcon(), label:'Admin'});
+  out.push({id:'perfil', ic:personIcon(), label:'Perfil'});
+  return out;
 }
+function navLabel(i){ return i.label + (i.locked ? lockIcon() : ''); }
 
 function buildShell(app){
+  document.documentElement.classList.add('in-app');
   const items = navItems();
+  const PREF = ['tareas','calendario','chat','notas','gastos','estadisticas','diagramas','tiempo','grupo'];
+  MOBILE_PRIMARY = PREF.filter(id => items.some(i => i.id === id)).slice(0, 5);
   app.innerHTML = `
     <div id="shell">
       <div class="side">
         <div class="brand"><span class="dot"></span>Gestión Personal</div>
-        <div class="navlist">${items.map(i => `<button class="navbtn" data-nav="${i.id}"><span class="ic">${i.ic}</span>${i.label}</button>`).join('')}</div>
+        <div class="navlist">${items.map(i => `<button class="navbtn" data-nav="${i.id}"><span class="ic">${i.ic}</span>${navLabel(i)}</button>`).join('')}</div>
         <div class="userbox">
           <div class="who"><span class="avatar">${initials(me.username)}</span><span class="uname">${escapeHtml(me.username)}</span></div>
           <button class="btn btn-danger btn-sm btn-block" id="logoutBtnSide">${logoutIcon()} Cerrar sesión</button>
@@ -1331,11 +1438,14 @@ function buildShell(app){
           <button class="menu-btn" id="menuBtn">${menuIcon()}</button>
           <h1 id="headerTitle">Tareas</h1>
           <div class="spacer"></div>
-          <button class="header-weather" id="headerWeather"></button>
-          <button class="notif-toggle" id="assistBtn" data-assist title="Asistente" aria-label="Asistente">${sparkleIcon()}</button>
-          <button class="notif-toggle" id="themeBtn" data-theme-toggle title="Tema: automático / claro / oscuro" aria-label="Cambiar tema">${themeIcons()}</button>
-          <button class="notif-toggle" id="notifBtn"></button>
+          <div class="hdr-actions">
+            <button class="header-weather" id="headerWeather"></button>
+            <button class="notif-toggle" id="assistBtn" data-assist title="Apuntar algo" aria-label="Apuntar algo">${sparkleIcon()}</button>
+            <button class="notif-toggle" id="themeBtn" data-theme-toggle title="Tema: automático / claro / oscuro" aria-label="Cambiar tema">${themeIcons()}</button>
+            <button class="notif-toggle" id="notifBtn"></button>
+          </div>
         </div>
+        <div class="locked-view" id="lockedView" style="display:none;"></div>
 
         <div class="section" id="section-tareas">
           <div class="tsidebar">
@@ -1384,9 +1494,10 @@ function buildShell(app){
         <div class="duname">${escapeHtml(me.username)}</div>
         <div class="drole">${me.role==='admin' ? 'Administrador' : 'Usuario'}${group ? ' · '+escapeHtml(group.name) : ''}</div>
         <div class="drawer-section-label">Secciones</div>
-        <div class="drawer-nav-list">${items.map(i => `<button class="drawer-item drawer-nav-item" data-nav="${i.id}"><span class="di-icon">${i.ic}</span>${i.label}</button>`).join('')}</div>
+        <div class="drawer-nav-list">${items.map(i => `<button class="drawer-item drawer-nav-item" data-nav="${i.id}"><span class="di-icon">${i.ic}</span>${navLabel(i)}</button>`).join('')}</div>
         <div class="drawer-divider"></div>
         <div class="drawer-section-label">Cuenta</div>
+        <button class="drawer-item" data-theme-toggle>${themeIcons()}<span class="th-txt"></span></button>
         <button class="drawer-item" id="installBtnDrawer" style="display:none;">Instalar app</button>
         <button class="drawer-item danger" id="logoutBtnDrawer">${logoutIcon()} Cerrar sesión</button>
       </div>
@@ -1450,7 +1561,7 @@ function buildShell(app){
         <div class="modal-body" id="recModalBody"></div>
         <div class="modal-footer"><button class="fin-save" id="recSaveBtn" style="width:100%;">Guardar</button></div>
       </div>
-      <div class="mobilenav">${items.filter(i => MOBILE_PRIMARY.includes(i.id)).map(i => `<button data-nav="${i.id}"><span class="ic">${i.ic}</span>${i.label}</button>`).join('')}<button id="mobileMoreBtn"><span class="ic">${menuIcon()}</span>Más</button></div>
+      <div class="mobilenav">${items.filter(i => MOBILE_PRIMARY.includes(i.id)).map(i => `<button data-nav="${i.id}"><span class="ic">${i.ic}</span>${navLabel(i)}</button>`).join('')}<button id="mobileMoreBtn"><span class="ic">${menuIcon()}</span>Más</button></div>
     </div>
   `;
   document.querySelectorAll('[data-nav]').forEach(btn => { btn.onclick = () => { currentSection = btn.dataset.nav; render(); }; });
@@ -4096,55 +4207,6 @@ function renderGrupo(){
 }
 
 /* ============================================================ ADMIN ============================================================ */
-async function renderAdmin(){
-  const el=document.getElementById('adminMain');
-  el.innerHTML = `<div class="fin-header"><h2>Administración de usuarios</h2></div><div id="adminBody">Cargando…</div>`;
-  try {
-    adminUsers = await api('?resource=users');
-  } catch(e){ document.getElementById('adminBody').innerHTML = `<div class="empty">No se pudo cargar: ${escapeHtml(e.message)}</div>`; return; }
-  const body=document.getElementById('adminBody');
-  body.innerHTML = `
-    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Usuario</th><th>Rol</th><th>Grupo</th><th>Activo</th><th></th></tr></thead>
-    <tbody id="adminRows"></tbody></table></div>
-    <p style="font-size:12px;color:var(--ink-soft);margin-top:14px;">El administrador puede gestionar cuentas, roles y grupos, pero no tiene acceso a las tareas, gastos ni estadísticas de ningún usuario.</p>
-  `;
-  const rows=document.getElementById('adminRows');
-  adminUsers.forEach(u => {
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(u.username)}</td>
-      <td><span class="role-badge ${u.role==='admin'?'admin':''}">${u.role}</span></td>
-      <td><input type="number" value="${u.group_id??''}" placeholder="ID grupo" style="width:80px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;" id="grp-${u.id}"></td>
-      <td><input type="checkbox" ${u.active?'checked':''} id="act-${u.id}"></td>
-      <td class="admin-actions">
-        <select id="role-${u.id}"><option value="user" ${u.role==='user'?'selected':''}>user</option><option value="admin" ${u.role==='admin'?'selected':''}>admin</option></select>
-        <input type="password" id="newpwd-${u.id}" placeholder="Nueva contraseña" style="width:130px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;">
-        <button id="save-${u.id}">Guardar</button>
-        <button class="danger" id="del-${u.id}">Eliminar</button>
-      </td>`;
-    rows.appendChild(tr);
-    document.getElementById('save-'+u.id).onclick = () => saveUserEdit(u.id);
-    document.getElementById('del-'+u.id).onclick = () => deleteUser(u.id);
-  });
-}
-async function saveUserEdit(id){
-  const role=document.getElementById('role-'+id).value;
-  const group_id=document.getElementById('grp-'+id).value || null;
-  const active=document.getElementById('act-'+id).checked ? 1 : 0;
-  const newPwdInput=document.getElementById('newpwd-'+id);
-  const payload={role,group_id,active};
-  if(newPwdInput.value){
-    if(newPwdInput.value.length<6){ alert('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
-    payload.new_password = newPwdInput.value;
-  }
-  await api('?resource=users&id='+id,{method:'PATCH',body:JSON.stringify(payload)});
-  renderAdmin();
-}
-async function deleteUser(id){
-  await api('?resource=users&id='+id,{method:'DELETE'});
-  renderAdmin();
-}
-
 init();
 </script>
 </body>

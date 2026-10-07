@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/perm.php';
 
 header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
@@ -34,7 +35,7 @@ try {
         $stmt->execute([$id]);
         $user = safeUser($stmt->fetch());
         $_SESSION['user'] = $user;
-        echo json_encode($user);
+        echo json_encode($user + permPublic($pdo, $user['id']));
         exit;
     }
 
@@ -49,7 +50,7 @@ try {
         }
         $user = safeUser($row);
         $_SESSION['user'] = $user;
-        echo json_encode($user);
+        echo json_encode($user + permPublic($pdo, $user['id']));
         exit;
     }
 
@@ -81,7 +82,7 @@ try {
     if ($action === 'me') {
         $u = currentUser();
         if (!$u) { http_response_code(401); echo json_encode(['error' => 'no autenticado']); exit; }
-        echo json_encode($u);
+        echo json_encode(array_merge($u, permPublic($pdo, $u['id'])));    // rol, módulos y mensajes frescos
         exit;
     }
 
