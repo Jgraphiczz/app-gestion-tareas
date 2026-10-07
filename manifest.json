@@ -3,8 +3,8 @@
   "short_name": "Gestión Personal",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#FAF9F7",
-  "theme_color": "#FAF9F7",
+  "background_color": "#F5F6F9",
+  "theme_color": "#F5F6F9",
   "icons": [
     {
       "src": "icon-192.png",

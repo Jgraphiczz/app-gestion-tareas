@@ -18,7 +18,7 @@
     .ptr svg{width:18px;height:18px;}
     .ptr.spin svg{animation:spin .7s linear infinite;}
     .offline-banner{position:fixed;left:0;right:0;bottom:0;z-index:48;padding:6px 12px calc(6px + var(--safe-b));text-align:center;font-size:12.5px;font-weight:600;background:var(--butter);color:var(--butter-ink);}
-    @media (max-width:860px){.offline-banner{bottom:calc(64px + var(--safe-b));padding-bottom:6px;}}
+    @media (max-width:860px){.offline-banner{bottom:calc(98px + var(--safe-b));left:12px;right:12px;border-radius:14px;padding-bottom:6px;}}
   `;
   document.head.appendChild(css);
 
@@ -30,7 +30,7 @@
     root.dataset.themePref = p;
     if (p === 'auto') delete root.dataset.theme; else root.dataset.theme = p;
     const dark = p === 'dark' || (p === 'auto' && mq.matches);
-    document.querySelectorAll('meta[name=theme-color]').forEach(m => { m.content = dark ? '#161518' : '#FAF9F7'; });
+    document.querySelectorAll('meta[name=theme-color]').forEach(m => { m.content = dark ? '#08090D' : '#F5F6F9'; });
   }
   document.addEventListener('click', e => {
     if (!e.target.closest('[data-theme-toggle]')) return;
@@ -179,7 +179,7 @@
     if (a === 'nueva-tarea') setTimeout(() => document.getElementById('newTaskFab')?.click(), 50);
     if (a === 'nuevo-gasto') { currentSection = 'gastos'; render(); setTimeout(() => document.getElementById('newMovFab')?.click(), 50); }
   }
-  function onRender() { syncInstall(); syncOnline(); updateBadge(); runShortcut(); }
+  function onRender() { if (typeof currentSection !== 'undefined' && currentSection !== 'chat') document.body.classList.remove('chat-typing'); syncInstall(); syncOnline(); updateBadge(); runShortcut(); }
 
   if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 
