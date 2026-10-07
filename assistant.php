@@ -11,7 +11,7 @@
  */
 require_once __DIR__ . '/ai_common.php';
 
-[$me, $pdo, $model] = aiBoot();
+[$me, $pdo, $model] = aiBoot(['asistente']);
 
 $b = json_decode(file_get_contents('php://input'), true) ?? [];
 $text = trim((string)($b['text'] ?? ''));

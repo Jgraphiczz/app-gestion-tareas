@@ -2,16 +2,18 @@
 /** Piezas comunes de assistant.php (crear tareas/gastos) y chat.php (conversación): clave de Groq,
  *  límite diario por usuario y llamada HTTP. Se incluye desde ellos; no se llama directamente. */
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/perm.php';
 
 function aout($data, $code = 200) { http_response_code($code); echo json_encode($data, JSON_UNESCAPED_UNICODE); exit; }
 
-/** Comprueba método, sesión y clave. Devuelve [$me, $pdo, $model]. */
-function aiBoot() {
+/** Comprueba método, sesión, permiso del módulo y clave. Devuelve [$me, $pdo, $model]. */
+function aiBoot(array $modules) {
     header('Content-Type: application/json; charset=utf-8');
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') aout(['error' => 'método no permitido'], 405);
     $me = requireAuth();
     $pdo = db();
+    permRequire($pdo, $me['id'], $modules);                 // 403 con el mensaje de permisos configurado
     if (!defined('GROQ_API_KEY') || !GROQ_API_KEY) aout(['error' => 'El asistente no está configurado todavía (falta GROQ_API_KEY en config.php).'], 503);
     $model = defined('GROQ_MODEL') && GROQ_MODEL ? GROQ_MODEL : 'openai/gpt-oss-20b';
     return [$me, $pdo, $model];
