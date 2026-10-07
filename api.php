@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/perm.php';
+require_once __DIR__ . '/features.php';
 
 header('Content-Type: application/json; charset=utf-8');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
@@ -321,9 +322,12 @@ $perm = permResolve($pdo, $me['id']);
 $_SESSION['user']['role'] = $perm['role'];
 $me['role'] = $perm['role'];
 
+$hasFeat = featEnsureSchema($pdo);      // columnas/tablas nuevas (tareas repetidas, compra, presupuestos…)
+
 try {
     permAdminRoute($pdo, $resource, $method, $id, body());                 // roles y mensajes (solo administradores)
     if ($mods = permResourceModules($resource)) permRequire($pdo, $me['id'], $mods);   // 403 con el mensaje configurado
+    featRoute($pdo, $me, $resource, $method, $id, body(), userGroupIds($pdo, $me['id']));   // presupuestos, compra, preferencias
 
     /* ===================== ADMIN: usuarios y grupos ===================== */
     if ($resource === 'users') {
@@ -384,6 +388,9 @@ try {
         if ($method === 'DELETE' && $id) {
             if ((int)$id === (int)$me['id']) out(['error' => 'no puedes borrar tu propia cuenta de admin'], 400);
             $pdo->prepare("DELETE FROM shares WHERE recipient_type = 'user' AND recipient_id = ?")->execute([$id]);
+            foreach (['DELETE FROM shopping_items WHERE user_id = ? AND group_id IS NULL', 'DELETE FROM budgets WHERE user_id = ?', 'DELETE FROM user_prefs WHERE user_id = ?'] as $q) {
+                try { $pdo->prepare($q)->execute([$id]); } catch (Exception $e) { /* función aún sin usar */ }
+            }
             try {                                                    // conversaciones y ajustes del chat de ese usuario
                 $pdo->prepare('DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_id = ?)')->execute([$id]);
                 $pdo->prepare('DELETE FROM chat_conversations WHERE user_id = ?')->execute([$id]);
@@ -430,12 +437,7 @@ try {
 
         $taskStmt = $pdo->prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC');
         $taskStmt->execute([$me['id']]);
-        $tasks = array_map(function($t) {
-            $t['reminders'] = json_decode($t['reminders'] ?? '[]', true) ?: [];
-            $t['notified'] = json_decode($t['notified'] ?? '[]', true) ?: [];
-            $t['done'] = (bool)$t['done'];
-            return $t;
-        }, $taskStmt->fetchAll());
+        $tasks = array_map('featTaskOut', $taskStmt->fetchAll());
 
         $fcStmt = $pdo->prepare('SELECT * FROM finance_categories WHERE user_id = ? ORDER BY created_at ASC');
         $fcStmt->execute([$me['id']]);
@@ -488,11 +490,14 @@ try {
         $recStmt->execute([$me['id']]);
         $recurringItems = $recStmt->fetchAll();
 
+        $budgets = [];
+        if ($hasFeat) { $bs = $pdo->prepare('SELECT id, category_id, amount FROM budgets WHERE user_id = ?'); $bs->execute([$me['id']]); $budgets = array_map(fn($r) => ['id' => (int)$r['id'], 'category_id' => (int)$r['category_id'], 'amount' => (float)$r['amount']], $bs->fetchAll()); }
+
         out(permFilterAll([
             'categories' => $categories, 'tags' => $tags, 'tasks' => $tasks,
             'finance_categories' => $financeCategories, 'movements' => $movements,
             'group' => $group, 'group_members' => $groupMembers, 'me' => $me,
-            'notes' => $notes, 'weather_location' => $weatherLocation, 'weather_locations' => $weatherLocations, 'groups_data' => $groupsData, 'my_groups' => $myGroups, 'loans' => $loans, 'recurring_items' => $recurringItems,
+            'notes' => $notes, 'weather_location' => $weatherLocation, 'weather_locations' => $weatherLocations, 'groups_data' => $groupsData, 'my_groups' => $myGroups, 'loans' => $loans, 'recurring_items' => $recurringItems, 'budgets' => $budgets,
         ], $perm));
     }
 
@@ -659,18 +664,20 @@ try {
         if ($method === 'POST') {
             $b = body();
             if (!categoryBelongsToUser($pdo, $b['category_id'], $me['id'])) out(['error' => 'no autorizado'], 403);
-            $stmt = $pdo->prepare('INSERT INTO tasks (user_id, category_id, tag_id, text, description, due_at, reminders, notified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            $stmt->execute([
-                $me['id'], $b['category_id'], $b['tag_id'] ?? null, $b['text'], $b['description'] ?? null,
-                !empty($b['due_at']) ? gmdate('Y-m-d H:i:s', strtotime($b['due_at'])) : null,
-                json_encode($b['reminders'] ?? []), json_encode([])
-            ]);
+            $due = !empty($b['due_at']) ? gmdate('Y-m-d H:i:s', strtotime($b['due_at'])) : null;
+            $rule = $hasFeat && $due ? featCleanRepeat($b['repeat_rule'] ?? null) : null;       // repetir solo tiene sentido con fecha
+            if ($hasFeat) {
+                $stmt = $pdo->prepare('INSERT INTO tasks (user_id, category_id, tag_id, text, description, due_at, reminders, notified, priority, repeat_rule, checklist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$me['id'], $b['category_id'], $b['tag_id'] ?? null, mb_substr(trim((string)$b['text']), 0, 255), $b['description'] ?? null, $due,
+                    json_encode($b['reminders'] ?? []), json_encode([]), max(0, min(3, (int)($b['priority'] ?? 0))), $rule,
+                    json_encode(featCleanChecklist($b['checklist'] ?? []), JSON_UNESCAPED_UNICODE)]);
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO tasks (user_id, category_id, tag_id, text, description, due_at, reminders, notified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$me['id'], $b['category_id'], $b['tag_id'] ?? null, $b['text'], $b['description'] ?? null, $due, json_encode($b['reminders'] ?? []), json_encode([])]);
+            }
             $newId = $pdo->lastInsertId();
             $row = $pdo->query("SELECT * FROM tasks WHERE id = $newId")->fetch();
-            $row['reminders'] = json_decode($row['reminders'], true) ?: [];
-            $row['notified'] = json_decode($row['notified'], true) ?: [];
-            $row['done'] = (bool)$row['done'];
-            out($row, 201);
+            out(featTaskOut($row), 201);
         }
         if ($method === 'PATCH' && $id) {
             $s = $pdo->prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?');
@@ -679,13 +686,23 @@ try {
             $b = body();
             $fields = []; $vals = [];
             if (array_key_exists('done', $b)) { $fields[] = 'done = ?'; $vals[] = $b['done'] ? 1 : 0; }
+            if (array_key_exists('text', $b)) { $t = mb_substr(trim((string)$b['text']), 0, 255); if ($t !== '') { $fields[] = 'text = ?'; $vals[] = $t; } }
+            if ($hasFeat && array_key_exists('priority', $b)) { $fields[] = 'priority = ?'; $vals[] = max(0, min(3, (int)$b['priority'])); }
+            if ($hasFeat && array_key_exists('repeat_rule', $b)) { $fields[] = 'repeat_rule = ?'; $vals[] = featCleanRepeat($b['repeat_rule']); }
+            if ($hasFeat && array_key_exists('checklist', $b)) { $fields[] = 'checklist = ?'; $vals[] = json_encode(featCleanChecklist($b['checklist']), JSON_UNESCAPED_UNICODE); }
             if (array_key_exists('notified', $b)) { $fields[] = 'notified = ?'; $vals[] = json_encode($b['notified']); }
             if (array_key_exists('due_at', $b)) { $fields[] = 'due_at = ?'; $vals[] = $b['due_at'] ? gmdate('Y-m-d H:i:s', strtotime($b['due_at'])) : null; }
             if (array_key_exists('reminders', $b)) { $fields[] = 'reminders = ?'; $vals[] = json_encode($b['reminders']); }
             if (array_key_exists('description', $b)) { $fields[] = 'description = ?'; $vals[] = $b['description']; }
             if (array_key_exists('category_id', $b) && categoryBelongsToUser($pdo, $b['category_id'], $me['id'])) { $fields[] = 'category_id = ?'; $vals[] = $b['category_id']; }
             if ($fields) { $vals[] = $id; $pdo->prepare('UPDATE tasks SET ' . implode(',', $fields) . ' WHERE id = ?')->execute($vals); }
-            out(['ok' => true]);
+            $next = null;                                              // al completar una tarea repetida nace la siguiente
+            if ($hasFeat && array_key_exists('done', $b) && $b['done']) {
+                $cur = $pdo->prepare('SELECT * FROM tasks WHERE id = ?'); $cur->execute([$id]);
+                $next = featSpawnNext($pdo, $cur->fetch(), $me['id']);
+            }
+            $cur = $pdo->prepare('SELECT * FROM tasks WHERE id = ?'); $cur->execute([$id]);
+            out(['ok' => true, 'task' => featTaskOut($cur->fetch()), 'next' => $next]);
         }
         if ($method === 'DELETE' && $id) {
             $s = $pdo->prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?');

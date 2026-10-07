@@ -1104,8 +1104,8 @@
     .only-sm{display:inline-flex !important;}
     .chat-ghost span{display:none;} .chat-ghost.sm span{display:inline;}
     .chat-side{position:fixed;top:0;left:0;bottom:0;width:min(86vw,320px);z-index:96;background:var(--card);padding-top:calc(14px + var(--safe-t));padding-bottom:calc(10px + var(--safe-b));
-      transform:translateX(-102%);transition:transform .28s cubic-bezier(.2,.7,.2,1);box-shadow:20px 0 50px -20px rgba(0,0,0,.4);}
-    .chat-side.open{transform:none;}
+      transform:translateX(-102%);transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s;box-shadow:none;visibility:hidden;}
+    .chat-side.open{transform:none;box-shadow:20px 0 50px -20px rgba(0,0,0,.4);visibility:visible;}
     .chat-backdrop.open{display:block;position:fixed;inset:0;z-index:95;background:rgba(8,9,13,.45);backdrop-filter:blur(4px);}
     .chat-id small{display:none;}
   }
@@ -1118,6 +1118,42 @@
     html.in-app .content{height:100%;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
     html.in-app .content > .section{flex-shrink:0;}
   }
+
+  /* chat: barra superior clara, cajón de conversaciones, datos */
+  button.chat-id{border:none;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:6px 8px 6px 0;border-radius:14px;min-width:0;flex:1;display:flex;align-items:center;gap:11px;}
+  button.chat-id > div{min-width:0;} button.chat-id b,button.chat-id small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-id .chev{display:none;color:var(--ink-soft);flex-shrink:0;} .chat-id .chev svg{width:18px;height:18px;display:block;}
+  .m-only{display:none;} .d-only{display:inline;}
+  .cs-title-row{display:none;}
+  .msg-tools{margin-top:8px;font-size:12px;color:var(--ink-soft);background:var(--primary-soft);color:var(--primary);display:inline-block;border-radius:9px;padding:4px 10px;font-weight:600;}
+  .chat-data-cta{margin-top:10px;border:1.5px dashed color-mix(in srgb,var(--primary) 45%,var(--line));background:transparent;border-radius:16px;padding:14px 16px;cursor:pointer;text-align:left;font:inherit;color:var(--ink);max-width:480px;width:100%;}
+  .chat-data-cta b{display:block;font-size:14px;color:var(--primary);} .chat-data-cta span{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+  .chat-data-cta:hover{background:var(--primary-soft);}
+  .cs-sw{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--bg);border-radius:14px;padding:14px;cursor:pointer;}
+  .cs-sw b{display:block;font-size:14.5px;} .cs-sw small{display:block;color:var(--ink-soft);font-size:12.5px;line-height:1.45;margin-top:3px;}
+  .cs-sw input{appearance:none;width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;border:none;padding:0;margin-top:2px;}
+  .cs-sw input::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .cs-sw input:checked{background:var(--primary);} .cs-sw input:checked::after{transform:translateX(18px);}
+  @media (max-width:860px){
+    .m-only{display:inline;} .d-only{display:none;}
+    .chat-id small{display:block !important;}
+    .chat-id .chev{display:block;}
+    button.chat-id{background:color-mix(in srgb,var(--card) 70%,transparent);border:1px solid var(--line);padding:7px 12px 7px 8px;}
+    .chat-top{gap:8px;} .chat-actions{flex-shrink:0;}
+    .chat-ghost span{display:inline !important;} .chat-ghost.icon span{display:none !important;}
+    #chatNewTop{background:var(--primary-soft);color:var(--primary);border-color:transparent;font-weight:700;padding:9px 12px;}
+    .cs-title-row{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 10px;} .cs-title-row b{font-size:17px;letter-spacing:-.02em;}
+    .cs-close{border:none;background:none;color:var(--ink-soft);padding:8px;cursor:pointer;} .cs-close svg{width:18px;height:18px;display:block;}
+  }
+  @media (min-width:861px){ button.chat-id{cursor:default;} }
+
+  /* auditoría de interfaz: tipografía, zonas táctiles y tablet */
+  .cal-title,.cal-panel h3,.weather-hero .wh-desc{text-transform:none;}
+  .cal-title::first-letter,.cal-panel h3::first-letter,.weather-hero .wh-desc::first-letter{text-transform:uppercase;}
+  .task-del,.mov-edit,.icon-btn{padding:9px;} .task-del{margin:-4px -5px -4px 0;}
+  .hy-more,.sp-clear{padding:9px 6px;min-height:34px;}
+  @media (min-width:600px) and (max-width:860px){ .mobilenav{max-width:560px;margin-left:auto;margin-right:auto;} }
+  @media (max-width:700px){ .hy-grid{grid-template-columns:minmax(0,1fr) !important;} }
 </style>
 </head>
 <body>
@@ -1126,6 +1162,11 @@
 <script src="./mobile.js"></script>
 <script src="./capture-parse.js"></script>
 <script src="./capture.js"></script>
+<script src="./tasks-plus.js"></script>
+<script src="./today.js"></script>
+<script src="./shopping.js"></script>
+<script src="./budgets.js"></script>
+<script src="./prefs.js"></script>
 <script src="./chat.js"></script>
 <script src="./admin.js"></script>
 <script>
@@ -1176,7 +1217,7 @@ async function authApi(path, options = {}) {
 
 let me = null, group = null, groupMembers = [];
 let categories = [], tags = [], tasks = [];
-let financeCategories = [], movements = [];
+let financeCategories = [], movements = [], budgets = [];
 let adminUsers = [];
 let notes = [];
 let myGroups = [];
@@ -1184,7 +1225,7 @@ let groupsData = [], groupInvites = [], groupBusy = false;
 let activeNoteId = null, noteSearchQuery = '', mobileShowingEditor = false;
 let noteSaveTimer = null;
 
-let currentSection = 'tareas';
+let currentSection = 'hoy';
 let authMode = 'login';
 
 // Tareas
@@ -1252,6 +1293,8 @@ function personIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><circle cx="
 function calendarIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'; }
 function chevLeftIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
 function chevRightIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+function homeIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M4 11.2L12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.2V15h-6.6v5.5H5.5A1.5 1.5 0 0 1 4 19v-7.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>'; }
+function cartIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M3.5 5h2.2l2 9.5h9.6l1.7-6.8H7M9.5 19.2a1.1 1.1 0 1 0 0 .01M16.5 19.2a1.1 1.1 0 1 0 0 .01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
 function chatIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M5 5.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6.5L8 21v-3.5H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 8.6l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z" fill="currentColor"/></svg>'; }
 function plusIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'; }
 function sparkleIcon(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'; }
@@ -1285,6 +1328,7 @@ async function loadAll(){
   tasks = (data.tasks || []).map(t => ({ reminders: [], notified: [], due_at: null, ...t, id:String(t.id) }));
   financeCategories = data.finance_categories || [];
   movements = data.movements || [];
+  budgets = data.budgets || [];
   group = data.group || null;
   groupMembers = data.group_members || [];
   notes = data.notes || [];
@@ -1310,7 +1354,7 @@ function render(){
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   const sec = document.getElementById('section-' + currentSection);
   if (sec) sec.classList.add('active');
-  const titles = { tareas:'Tareas', calendario:'Calendario', chat:'Chat', notas:'Notas', gastos:'Gastos', estadisticas:'Estadísticas', grupo:'Grupos', admin:'Administración', perfil:'Perfil', tiempo:'Tiempo', diagramas:'Diagramas' };
+  const titles = { hoy:'Hoy', compra:'Lista de la compra', tareas:'Tareas', calendario:'Calendario', chat:'Chat', notas:'Notas', gastos:'Gastos', estadisticas:'Estadísticas', grupo:'Grupos', admin:'Administración', perfil:'Perfil', tiempo:'Tiempo', diagramas:'Diagramas' };
   const lv = document.getElementById('lockedView');
   const locked = currentSection !== 'admin' && currentSection !== 'perfil' && modState(currentSection) === 'locked';
   if (lv) {
@@ -1330,6 +1374,8 @@ function render(){
   updateGroupBadge();
 
   if (locked) { if (window.MobileX) MobileX.onRender(); return; }
+  if (currentSection === 'hoy' && window.renderHoy) renderHoy();
+  if (currentSection === 'compra' && window.renderCompra) renderCompra();
   if (currentSection === 'tareas'){ renderTabs(); renderNewCatForm(); renderMain(); }
   if (currentSection === 'calendario') renderCalendario();
   if (currentSection === 'chat' && window.renderChat) renderChat();
@@ -1397,13 +1443,15 @@ async function logout(){
 function modState(id){ if(!me || me.role === 'admin') return 'allow'; return (me.modules && me.modules[id]) || 'allow'; }
 function modMessage(id){ const m = (me && me.messages) || {}; return m[id] || m._default || 'No tienes permiso para usar este módulo.'; }
 function modGate(id){ if(modState(id) === 'allow') return true; showToast(modMessage(id)); return false; }
-let MOBILE_PRIMARY = ['tareas','calendario','chat','notas','gastos'];
+let MOBILE_PRIMARY = ['hoy','tareas','chat','compra','gastos'];
 function lockIcon(){ return '<svg class="lockic" viewBox="0 0 24 24" fill="none"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'; }
 function navItems(){
   const items = [
+    {id:'hoy', ic:homeIcon(), label:'Hoy'},
     {id:'tareas', ic:checklistIcon(), label:'Tareas'},
     {id:'calendario', ic:calendarIcon(), label:'Calendario'},
     {id:'chat', ic:chatIcon(), label:'Chat'},
+    {id:'compra', ic:cartIcon(), label:'Compra'},
     {id:'notas', ic:noteIcon(), label:'Notas'},
     {id:'diagramas', ic:diagramIcon(), label:'Diagramas'},
     {id:'gastos', ic:walletIcon(), label:'Gastos'},
@@ -1421,7 +1469,7 @@ function navLabel(i){ return i.label + (i.locked ? lockIcon() : ''); }
 function buildShell(app){
   document.documentElement.classList.add('in-app');
   const items = navItems();
-  const PREF = ['tareas','calendario','chat','notas','gastos','estadisticas','diagramas','tiempo','grupo'];
+  const PREF = ['hoy','tareas','chat','compra','gastos','calendario','notas','estadisticas','diagramas','tiempo','grupo'];
   MOBILE_PRIMARY = PREF.filter(id => items.some(i => i.id === id)).slice(0, 5);
   app.innerHTML = `
     <div id="shell">
@@ -1446,6 +1494,9 @@ function buildShell(app){
           </div>
         </div>
         <div class="locked-view" id="lockedView" style="display:none;"></div>
+
+        <div class="section" id="section-hoy"><div class="full-main" id="hoyMain"></div></div>
+        <div class="section" id="section-compra"><div class="full-main" id="compraMain"></div></div>
 
         <div class="section" id="section-tareas">
           <div class="tsidebar">
@@ -2293,6 +2344,15 @@ function renderPerfil(){
 
     <div class="profile-grid">
       <section class="pcard">
+        <h3>Avisos de tareas</h3>
+        <p class="sub">Recibe una notificación en este dispositivo cuando se acerque la fecha límite de una tarea con aviso.</p>
+        <button class="btn ${pushSubscribed ? 'btn-outline' : 'btn-soft'}" id="pfPushBtn">${pushSubscribed ? bellOffIcon() + ' Desactivar avisos' : bellIcon() + ' Activar avisos'}</button>
+        <p class="sub" style="margin:12px 0 0;">${pushSupported ? (pushSubscribed ? 'Avisos activados en este dispositivo.' : 'Ahora mismo están desactivados.') : 'Este navegador no admite notificaciones push. En iPhone, añade antes la app a la pantalla de inicio.'}</p>
+      </section>
+
+      <section class="pcard wide" id="pfExtras"></section>
+
+      <section class="pcard">
         <h3>Cambiar contraseña</h3>
         <p class="sub">Usa al menos 6 caracteres.</p>
         <div id="pfError"></div>
@@ -2300,13 +2360,6 @@ function renderPerfil(){
         <div class="auth-field"><label>Nueva contraseña</label><input type="password" id="pfNew" autocomplete="new-password"></div>
         <div class="auth-field"><label>Repite la nueva contraseña</label><input type="password" id="pfConfirm" autocomplete="new-password"></div>
         <button class="btn btn-primary" id="pfSaveBtn">Guardar contraseña</button>
-      </section>
-
-      <section class="pcard">
-        <h3>Avisos de tareas</h3>
-        <p class="sub">Recibe una notificación en este dispositivo cuando se acerque la fecha límite de una tarea con aviso.</p>
-        <button class="btn ${pushSubscribed ? 'btn-outline' : 'btn-soft'}" id="pfPushBtn">${pushSubscribed ? bellOffIcon() + ' Desactivar avisos' : bellIcon() + ' Activar avisos'}</button>
-        <p class="sub" style="margin:12px 0 0;">${pushSupported ? (pushSubscribed ? 'Avisos activados en este dispositivo.' : 'Ahora mismo están desactivados.') : 'Este navegador no admite notificaciones push. En iPhone, añade antes la app a la pantalla de inicio.'}</p>
       </section>
 
       <section class="pcard wide">
@@ -2321,6 +2374,7 @@ function renderPerfil(){
   const pushBtn = document.getElementById('pfPushBtn');
   pushBtn.disabled = !pushSupported;
   pushBtn.onclick = async () => { await togglePush(); if(currentSection === 'perfil') renderPerfil(); };
+  if(window.renderPerfilExtras) renderPerfilExtras(document.getElementById('pfExtras'));
   renderPerfilCategoryList();
 }
 function renderPerfilCategoryList(){
@@ -2702,11 +2756,15 @@ function taskRow(task,cat,c,myTags,opts){
   const box=document.createElement('div'); box.className='box'; box.innerHTML=checkSvg(); box.onclick=()=>toggleTask(task.id,!task.done);
   const body=document.createElement('div'); body.className='task-body';
   const text=document.createElement('div'); text.className='task-text'; text.textContent=task.text; body.appendChild(text);
+  if(task.priority>0) row.classList.add('prio-'+task.priority);
+  if(window.TasksPlus){ body.style.cursor='pointer'; body.onclick=()=>TasksPlus.open(task.id); }
   if(task.description){ const desc=document.createElement('div'); desc.style.cssText='font-size:13px;color:var(--ink-soft);margin-top:3px;line-height:1.4;'; desc.textContent=task.description; body.appendChild(desc); }
   const meta=document.createElement('div'); meta.className='task-meta';
   if((showUpcoming || showOverdue || inCal) && cat){ const cn=document.createElement('span'); cn.style.background=c.bg; cn.style.color=c.ink; cn.textContent=cat.name; meta.appendChild(cn); }
   const tag=tagsForCat.find(t=>t.id==task.tag_id);
   if(tag){ const tn=document.createElement('span'); tn.className='tagname'; tn.textContent=tag.name; meta.appendChild(tn); }
+  if(task.repeat_rule && window.TasksPlus){ const rp=document.createElement('span'); rp.className='tagname'; rp.textContent='↻ '+TasksPlus.repeatLabel(task.repeat_rule); meta.appendChild(rp); }
+  if(task.checklist && task.checklist.length){ const dn=task.checklist.filter(x=>x.d).length; const ck=document.createElement('span'); ck.className='tagname'; ck.textContent='☑ '+dn+'/'+task.checklist.length; meta.appendChild(ck); }
   if(inCal){
     if(task.due_at){ const tm=document.createElement('span'); tm.className='task-time'; tm.textContent=new Date(task.due_at.replace(' ','T')+'Z').toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); meta.appendChild(tm); }
   } else {
@@ -2741,12 +2799,17 @@ async function deleteTag(id){
 const REMINDER_OPTS=[{mins:1440,label:'1 día antes'},{mins:180,label:'3 horas antes'},{mins:60,label:'1 hora antes'},{mins:15,label:'15 min antes'}];
 
 async function toggleTask(id,done){
-  await api('?resource=tasks&id='+id,{method:'PATCH',body:JSON.stringify({done})});
-  const t=tasks.find(t=>t.id==id); if(t) t.done=done; refreshTaskViews();
+  const r = await api('?resource=tasks&id='+id,{method:'PATCH',body:JSON.stringify({done})});
+  const t=tasks.find(t=>t.id==id); if(t){ t.done=done; if(r && r.task) t.repeat_rule=r.task.repeat_rule; }
+  if(r && r.next){                                                          // tarea repetida: nace la siguiente
+    tasks.unshift({ reminders:[], notified:[], due_at:null, description:'', ...r.next, id:String(r.next.id) });
+    showToast('Tarea repetida · siguiente: ' + new Date(r.next.due_at.replace(' ','T')+'Z').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}));
+  }
+  refreshTaskViews();
   if(window.MobileX) MobileX.haptic(done ? 18 : 8);
 }
 async function deleteTask(id){ await api('?resource=tasks&id='+id,{method:'DELETE'}); tasks=tasks.filter(t=>t.id!=id); refreshTaskViews(); }
-function refreshTaskViews(){ renderTabs(); renderMain(); if(currentSection==='calendario') renderCalendario(); }
+function refreshTaskViews(){ renderTabs(); renderMain(); if(currentSection==='calendario') renderCalendario(); if(currentSection==='hoy' && window.renderHoy) renderHoy(); }
 
 /* ---- Modal de nueva tarea: nombre, descripción, categoría (+ crear), fecha y avisos ---- */
 let ntShowNewCat = false, ntShowDue = false;
@@ -3407,6 +3470,7 @@ function movementTotals(list){ let g=0,i=0; list.forEach(m=>{ if(m.type==='gasto
 
 const GASTOS_TABS = [
   {id:'movimientos', label:'Movimientos'},
+  {id:'presupuestos', label:'Presupuestos'},
   {id:'prestamos', label:'Préstamos'},
   {id:'fijos', label:'Fijos y nómina'},
 ];
@@ -3425,6 +3489,7 @@ function renderGastos(){
   `;
   el.querySelectorAll('.gastos-tab').forEach(b => b.onclick = () => { gastosTab = b.dataset.tab; renderGastos(); });
   if(gastosTab === 'movimientos') renderMovimientosTab();
+  else if(gastosTab === 'presupuestos' && window.renderPresupuestosTab) renderPresupuestosTab();
   else if(gastosTab === 'prestamos') renderPrestamosTab();
   else renderFijosTab();
 }

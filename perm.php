@@ -25,6 +25,7 @@ const APP_MODULES = [
     'estadisticas' => 'Estadísticas',
     'tiempo'       => 'Tiempo',
     'grupo'        => 'Grupos',
+    'compra'       => 'Lista de la compra',
     'asistente'    => 'Asistente ✨ (apuntar con IA)',
 ];
 const PERM_STATES = ['allow', 'locked', 'hidden'];
@@ -143,6 +144,7 @@ function permResourceModules($resource) {
         'weather_location' => ['tiempo'], 'weather_locations' => ['tiempo'],
         'my_groups' => ['grupo', 'gastos'], 'group_invites' => ['grupo'], 'group_members' => ['grupo'],
         'shares' => ['notas', 'diagramas'],
+        'shopping' => ['compra'], 'budgets' => ['gastos', 'estadisticas'],
     ];
     return $map[$resource] ?? null;
 }
@@ -153,7 +155,7 @@ function permFilterAll($payload, $p) {
     $ok = function (array $mods) use ($p) { foreach ($mods as $m) if (($p['modules'][$m] ?? 'allow') === 'allow') return true; return false; };
     $blank = function (array $keys) use (&$payload) { foreach ($keys as $k) if (array_key_exists($k, $payload)) $payload[$k] = is_array($payload[$k]) && array_values($payload[$k]) === $payload[$k] ? [] : null; };
     if (!$ok(['tareas', 'calendario'])) $blank(['categories', 'tags', 'tasks']);
-    if (!$ok(['gastos', 'estadisticas'])) $blank(['finance_categories', 'movements', 'loans', 'recurring_items']);
+    if (!$ok(['gastos', 'estadisticas'])) $blank(['finance_categories', 'movements', 'loans', 'recurring_items', 'budgets']);
     if (!$ok(['notas'])) $blank(['notes']);
     if (!$ok(['tiempo'])) { $blank(['weather_locations']); $payload['weather_location'] = null; }
     if (!$ok(['grupo', 'gastos'])) { $payload['group'] = null; $blank(['group_members', 'my_groups']); }

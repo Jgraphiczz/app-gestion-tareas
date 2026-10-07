@@ -1,5 +1,6 @@
 -- ============================================================================
---  Tablas nuevas: roles, permisos por módulo, mensajes y chat con memoria.
+--  Tablas nuevas: roles y permisos, chat con memoria, tareas repetidas / subtareas / prioridad,
+--  presupuestos, lista de la compra compartida y preferencias (resumen de la mañana, calendario).
 --
 --  NO hace falta ejecutarlo normalmente: la app crea estas tablas sola la primera vez
 --  (igual que hace con los grupos o los lugares del tiempo). Úsalo solo si el panel de
@@ -58,6 +59,53 @@ CREATE TABLE IF NOT EXISTS chat_settings (
   about TEXT NULL,                         -- "lo que quiero que sepas de mí"
   style TEXT NULL,                         -- "cómo quiero que respondas"
   updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- (*) Si te da error "Duplicate column name 'data_access'", ya existe: ignóralo.
+ALTER TABLE chat_settings ADD COLUMN data_access TINYINT(1) NOT NULL DEFAULT 0;   -- permitir que el chat consulte los datos del usuario
+
+-- Tareas: prioridad, repetición y subtareas
+-- (*) Si alguna da "Duplicate column name", ya existe: ignóralo.
+ALTER TABLE tasks ADD COLUMN priority TINYINT NOT NULL DEFAULT 0;      -- 0 normal · 1 baja · 2 media · 3 alta
+ALTER TABLE tasks ADD COLUMN repeat_rule VARCHAR(16) NULL;             -- daily | weekdays | weekly | monthly | yearly
+ALTER TABLE tasks ADD COLUMN checklist TEXT NULL;                      -- JSON: [{"t":"subtarea","d":false}]
+
+-- Presupuestos mensuales (category_id 0 = presupuesto total)
+CREATE TABLE IF NOT EXISTS budgets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  category_id INT NOT NULL DEFAULT 0,
+  amount DECIMAL(12,2) NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_budget (user_id, category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lista de la compra (group_id NULL = personal; si no, compartida con ese grupo)
+CREATE TABLE IF NOT EXISTS shopping_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  group_id INT NULL,
+  name VARCHAR(120) NOT NULL,
+  qty VARCHAR(30) NULL,
+  done TINYINT(1) NOT NULL DEFAULT 0,
+  done_by INT NULL,
+  archived TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  done_at TIMESTAMP NULL DEFAULT NULL,
+  KEY idx_shop_group (group_id, archived),
+  KEY idx_shop_user (user_id, archived)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Preferencias por usuario: resumen de la mañana y enlace secreto del calendario
+CREATE TABLE IF NOT EXISTS user_prefs (
+  user_id INT NOT NULL PRIMARY KEY,
+  brief_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  brief_time CHAR(5) NOT NULL DEFAULT '08:00',
+  tz VARCHAR(64) NOT NULL DEFAULT 'Europe/Madrid',
+  last_brief DATE NULL,
+  calendar_token CHAR(40) NULL,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_cal_token (calendar_token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Límite diario de mensajes de IA por usuario
