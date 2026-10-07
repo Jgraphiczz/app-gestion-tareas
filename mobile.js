@@ -119,10 +119,12 @@
   ptr.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   document.addEventListener('DOMContentLoaded', () => document.body.appendChild(ptr));
   const PTR_BLOCK = '.modal-sheet,.drawer,.notes-editor-pane,.diagram-overlay,textarea,input,select,[contenteditable],.tabs,.task-swipe';
+  // En móvil el que hace scroll es .content (el documento está bloqueado): ahí se mira si estamos arriba del todo
+  const scrollTop = () => { const c = document.querySelector('html.in-app .content'); return c && getComputedStyle(c).overflowY === 'auto' ? c.scrollTop : window.scrollY; };
   let py0 = 0, pdist = 0, pulling = false, refreshing = false;
   document.addEventListener('touchstart', e => {
     pulling = false;
-    if (refreshing || e.touches.length !== 1 || window.scrollY > 0 || typeof me === 'undefined' || !me) return;
+    if (refreshing || e.touches.length !== 1 || scrollTop() > 0 || typeof me === 'undefined' || !me) return;
     if (e.target.closest && e.target.closest(PTR_BLOCK)) return;
     if (document.querySelector('.modal-sheet.open,.drawer.open')) return;
     py0 = e.touches[0].clientY; pdist = 0; pulling = true;
@@ -130,7 +132,7 @@
   document.addEventListener('touchmove', e => {
     if (!pulling) return;
     const dy = e.touches[0].clientY - py0;
-    if (dy <= 0 || window.scrollY > 0) { pulling = false; ptr.style.opacity = 0; return; }
+    if (dy <= 0 || scrollTop() > 0) { pulling = false; ptr.style.opacity = 0; return; }
     pdist = Math.min(dy * 0.5, 80);
     ptr.style.opacity = Math.min(pdist / 50, 1);
     ptr.style.transform = `translateY(${pdist - 40}px) rotate(${pdist * 4}deg)`;
@@ -143,6 +145,13 @@
     try { await loadAll(); render(); } catch (e) { showToast('No se pudo actualizar'); }
     ptr.classList.remove('spin'); ptr.style.opacity = 0; ptr.style.transform = 'translateY(-40px)'; refreshing = false;
   });
+
+  /* ---------- iOS deja la pantalla "desplazada" al cerrar el teclado: se recoloca ---------- */
+  document.addEventListener('focusout', () => setTimeout(() => {
+    const a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    window.scrollTo(0, 0);
+  }, 150));
 
   /* ---------- banner sin conexión ---------- */
   let banner = null;

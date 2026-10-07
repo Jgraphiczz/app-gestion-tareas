@@ -1109,6 +1109,15 @@
     .chat-backdrop.open{display:block;position:fixed;inset:0;z-index:95;background:rgba(8,9,13,.45);backdrop-filter:blur(4px);}
     .chat-id small{display:none;}
   }
+
+  /* móvil: el documento no hace scroll, lo hace .content. Así las barras fijas (cabecera y menú inferior) nunca se mueven ni se
+     descolocan cuando el navegador encoge/estira su barra de direcciones o aparece/desaparece el teclado. */
+  @media (max-width:860px){
+    html.in-app,html.in-app body{height:100%;overflow:hidden;}
+    html.in-app #shell{height:100%;height:100dvh;min-height:0;overflow:hidden;}
+    html.in-app .content{height:100%;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+    html.in-app .content > .section{flex-shrink:0;}
+  }
 </style>
 </head>
 <body>
@@ -1337,6 +1346,7 @@ function render(){
 
 /* ============================================================ AUTH SCREEN ============================================================ */
 function renderAuth(app){
+  document.documentElement.classList.remove('in-app');
   app.innerHTML = `
     <div class="auth-wrap"><div class="auth-card">
       <h1><span class="dot"></span>App Gestión Personal</h1>
@@ -1378,7 +1388,7 @@ async function logout(){
   snapClear();
   if(window.chatReset) chatReset();
   await authApi('?action=logout', { method:'POST' });
-  me = null; document.getElementById('shell')?.remove();
+  me = null; document.getElementById('shell')?.remove(); document.documentElement.classList.remove('in-app');
   render();
 }
 
@@ -1409,6 +1419,7 @@ function navItems(){
 function navLabel(i){ return i.label + (i.locked ? lockIcon() : ''); }
 
 function buildShell(app){
+  document.documentElement.classList.add('in-app');
   const items = navItems();
   const PREF = ['tareas','calendario','chat','notas','gastos','estadisticas','diagramas','tiempo','grupo'];
   MOBILE_PRIMARY = PREF.filter(id => items.some(i => i.id === id)).slice(0, 5);
