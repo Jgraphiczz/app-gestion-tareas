@@ -104,7 +104,7 @@
         const c2 = document.createElement('section'); c2.className = 'hy-card';
         c2.innerHTML = '<div class="hy-h"><h3>Próximos días</h3><button class="hy-more" id="hyAll">Ver tareas</button></div><div class="hy-list" id="hySoon"></div>';
         L.appendChild(c2); soon.forEach(t => c2.querySelector('#hySoon').appendChild(taskRow(t, false)));
-        c2.querySelector('#hyAll').onclick = () => { currentSection = 'tareas'; render(); };
+        c2.querySelector('#hyAll').onclick = () => { showUpcoming = true; showOverdue = false; currentSection = 'tareas'; render(); };
       }
     }
 
